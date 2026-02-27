@@ -58,34 +58,34 @@ export default function Accueil() {
 
   const CarCard = ({ car }) => (
     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group flex flex-col">
-      <div className="relative h-48 overflow-hidden">
+      <div className="relative h-64 sm:h-56 overflow-hidden">
         <img src={car.image} alt={car.modele} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-        <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-md text-[10px] font-black text-black uppercase">{car.localisation}</div>
+        <div className="absolute top-4 right-4 bg-white/95 backdrop-blur-sm px-4 py-2 rounded-lg text-xs font-black text-black uppercase">{car.localisation}</div>
       </div>
-      <div className="p-4 flex-1 flex flex-col justify-between">
+      <div className="p-6 flex-1 flex flex-col justify-between">
         <div>
-          <div className="flex justify-between items-start mb-2">
+          <div className="flex justify-between items-start mb-4">
             <div>
-              <h3 className="text-sm font-black uppercase leading-tight">{car.marque} {car.modele}</h3>
-              <p className="text-[9px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">{car.energie}</p>
+              <h3 className="text-lg font-black uppercase leading-tight">{car.marque} {car.modele}</h3>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mt-1.5">{car.energie}</p>
             </div>
-            <div className="text-sm font-black text-[#ff4d00]">{car.prix}</div>
+            <div className="text-lg font-black text-[#ff4d00]">{car.prix}</div>
           </div>
         </div>
-        <button onClick={() => { setSelectedCar(car); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="w-full bg-gray-50 hover:bg-black text-black hover:text-white border border-gray-200 font-black text-[9px] py-2 rounded-lg transition-all uppercase flex items-center justify-center gap-1.5 mt-2">
-          Voir détails <ChevronRight size={12} />
+        <button onClick={() => { setSelectedCar(car); window.scrollTo({ top: 0, behavior: 'smooth' }); }} className="w-full bg-gray-50 hover:bg-black text-black hover:text-white border border-gray-200 font-black text-sm py-4 rounded-xl transition-all uppercase flex items-center justify-center gap-2 mt-2">
+          Voir détails <ChevronRight size={18} />
         </button>
       </div>
     </div>
   );
 
   const InteractiveSlider = ({ label, min, max, step, value, onChange, formatValue }) => (
-    <div className="flex flex-col justify-center px-2.5 py-1.5 bg-gray-50 rounded-lg border border-transparent hover:border-gray-200 transition-colors">
-      <div className="flex justify-between items-end mb-1">
-        <span className="text-[8px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
-        <span className="text-[10px] font-black text-black">{formatValue(value)}</span>
+    <div className="flex flex-col justify-center px-5 py-4 bg-gray-50 rounded-xl border border-transparent hover:border-gray-200 transition-colors">
+      <div className="flex justify-between items-end mb-3">
+        <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">{label}</span>
+        <span className="text-sm font-black text-black">{formatValue(value)}</span>
       </div>
-      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-1 bg-gray-200 rounded-full appearance-none accent-[#ff4d00] cursor-pointer" />
+      <input type="range" min={min} max={max} step={step} value={value} onChange={(e) => onChange(Number(e.target.value))} className="w-full h-2 bg-gray-200 rounded-full appearance-none accent-[#ff4d00] cursor-pointer" />
     </div>
   );
 
@@ -95,32 +95,26 @@ export default function Accueil() {
   return (
     <div className="w-full font-sans bg-white antialiased min-h-screen">
       
-      {/* Hero Section
-        Ajout de 'animate-drive' pour faire bouger le background
-      */}
       <div 
-        className="relative flex flex-col items-center px-4 min-h-[500px] pt-24 bg-no-repeat bg-[length:110%_auto] animate-drive"
+        className="relative flex flex-col items-center px-4 min-h-[600px] pt-32 pb-16 bg-no-repeat bg-cover bg-center"
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=2070')" }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
-        <div className="relative z-10 text-center mb-6 text-white">
-          <h1 className="text-2xl md:text-4xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl">
+        <div className="absolute inset-0 bg-black/60"></div>
+        
+        <div className="relative z-10 text-center mb-10 text-white px-2">
+          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl">
             L'EXCELLENCE <br/><span className="text-[#ff4d00]">À CHAQUE VIRAGE</span>
           </h1>
         </div>
 
-        {/* Formulaire Réduit 
-          Passage de max-w-[850px] à max-w-[650px]
-          Réduction des padding (p-5 -> p-4)
-        */}
-        <div className="relative z-20 w-full max-w-[650px] bg-white rounded-xl shadow-2xl p-4 mb-10">
+        <div className="relative z-20 w-full max-w-[800px] bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
           
-          <div className="flex flex-wrap gap-1 mb-4 bg-gray-100 p-1 rounded-lg w-fit mx-auto sm:mx-0">
+          <div className="flex flex-wrap gap-2 mb-8 bg-gray-100 p-2 rounded-2xl w-full sm:w-fit mx-auto sm:mx-0">
             {["Voitures neuves", "Voitures d'occasion", "A louer"].map((tab) => (
               <button 
                 key={tab} 
                 onClick={() => { setActiveTab(tab); setSearchResults(null); }}
-                className={`px-3 py-1.5 rounded-md text-[9px] font-black transition-all ${activeTab === tab ? "bg-white text-black shadow-sm" : "text-gray-500 hover:text-gray-800"}`}
+                className={`flex-1 sm:flex-none px-6 py-3.5 rounded-xl text-sm font-black transition-all ${activeTab === tab ? "bg-white text-black shadow-md" : "text-gray-500 hover:text-gray-800"}`}
               >
                 {tab}
               </button>
@@ -128,21 +122,21 @@ export default function Accueil() {
           </div>
 
           {!isRental ? (
-            <div className="space-y-3 animate-in fade-in duration-500">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-1.5">
+            <div className="space-y-4 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                 {['Marques', 'Modèles', 'Localisation', 'Energie'].map((filter) => (
                   <div key={filter} className="relative">
                     <button 
                       onClick={() => setActiveDropdown(activeDropdown === filter ? null : filter)}
-                      className="w-full bg-gray-50 rounded-md py-2 px-2 flex justify-between items-center text-[8px] font-black border border-transparent hover:border-gray-200"
+                      className="w-full bg-gray-50 rounded-xl py-4 px-4 flex justify-between items-center text-sm font-black border border-transparent hover:border-gray-300"
                     >
                       <span className="truncate">{selections[filter] || filter}</span>
-                      <ChevronDown size={10} />
+                      <ChevronDown size={18} className="text-[#ff4d00]" />
                     </button>
                     {activeDropdown === filter && (
-                      <div className="absolute top-full left-0 mt-1 w-full bg-white border shadow-xl rounded-lg z-50 max-h-40 overflow-y-auto">
+                      <div className="absolute top-full left-0 mt-2 w-full bg-white border shadow-2xl rounded-2xl z-50 max-h-64 overflow-y-auto">
                         {dropdownData[filter].map(item => (
-                          <button key={item} onClick={() => { setSelections({...selections, [filter]: item}); setActiveDropdown(null); }} className="w-full text-left px-3 py-1.5 text-[9px] font-bold hover:bg-[#ff4d00] hover:text-white">
+                          <button key={item} onClick={() => { setSelections({...selections, [filter]: item}); setActiveDropdown(null); }} className="w-full text-left px-5 py-4 text-sm font-bold hover:bg-[#ff4d00] hover:text-white border-b border-gray-50 last:border-0">
                             {item}
                           </button>
                         ))}
@@ -151,100 +145,107 @@ export default function Accueil() {
                   </div>
                 ))}
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                <InteractiveSlider label="Année Min." min={2010} max={2026} step={1} value={year} onChange={setYear} formatValue={v => v} />
-                <InteractiveSlider label="Budget Max" min={5} max={150} step={5} value={budget/1000000} onChange={v => setBudget(v*1000000)} formatValue={v => `${v}M FCFA`} />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <InteractiveSlider label="Année Minimale" min={2010} max={2026} step={1} value={year} onChange={setYear} formatValue={v => v} />
+                <InteractiveSlider label="Budget Maximum" min={5} max={150} step={5} value={budget/1000000} onChange={v => setBudget(v*1000000)} formatValue={v => `${v}M FCFA`} />
               </div>
-              <button onClick={handleSearch} className="w-full bg-black hover:bg-[#ff4d00] text-white font-black py-2.5 rounded-lg text-[10px] flex items-center justify-center gap-1.5 uppercase tracking-widest mt-1">
-                <Search size={12} /> Afficher
+              <button onClick={handleSearch} className="w-full bg-black hover:bg-[#ff4d00] text-white font-black py-5 rounded-2xl text-base flex items-center justify-center gap-3 uppercase tracking-widest mt-4 transition-all shadow-lg active:scale-95">
+                <Search size={22} /> Rechercher
               </button>
             </div>
           ) : (
-            <div className="space-y-2 animate-in fade-in duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                <div className="flex items-center gap-2 border rounded-md p-2 bg-gray-50/50">
-                  <MapPin className="text-[#ff4d00]" size={14} />
+            <div className="space-y-4 animate-in fade-in duration-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex items-center gap-4 border rounded-xl p-4 bg-gray-50/50 focus-within:border-orange-500 transition-all">
+                  <MapPin className="text-[#ff4d00]" size={22} />
                   <div className="flex-1">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Prise en charge</label>
-                    <input type="text" value={rentalLocation} onChange={(e) => setRentalLocation(e.target.value)} placeholder="Ville..." className="w-full outline-none font-bold bg-transparent text-[9px]" />
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Ville de départ</label>
+                    <input type="text" value={rentalLocation} onChange={(e) => setRentalLocation(e.target.value)} placeholder="Où voulez-vous aller ?" className="w-full outline-none font-bold bg-transparent text-sm mt-1" />
                   </div>
                 </div>
-                <div className="flex items-center gap-2 border rounded-md p-2 bg-gray-50/50">
+                <div className="flex items-center gap-4 border rounded-xl p-4 bg-gray-50/50">
                   <div className="flex-1">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Zone</label>
-                    <select value={zone} onChange={(e) => setZone(e.target.value)} className="w-full bg-transparent outline-none font-bold text-[9px]">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Zone de voyage</label>
+                    <select value={zone} onChange={(e) => setZone(e.target.value)} className="w-full bg-transparent outline-none font-bold text-sm appearance-none mt-1">
                       <option value="Abidjan">Abidjan uniquement</option>
-                      <option value="Hors Abidjan">Hors Abidjan</option>
+                      <option value="Hors Abidjan">Intérieur du pays (CI)</option>
                     </select>
                   </div>
+                  <ChevronDown size={18} className="text-gray-400" />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
-                <div className="flex gap-1">
-                  <div className="flex-1 p-2 bg-gray-50 border rounded-md">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Départ</label>
-                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="flex gap-3">
+                  <div className="flex-1 p-4 bg-gray-50 border rounded-xl">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Départ</label>
+                    <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2" />
                   </div>
-                  <div className="w-20 p-2 bg-gray-50 border rounded-md">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Heure</label>
-                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold" />
+                  <div className="w-28 p-4 bg-gray-50 border rounded-xl">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Heure</label>
+                    <input type="time" value={startTime} onChange={e => setStartTime(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2" />
                   </div>
                 </div>
-                <div className="flex gap-1">
-                  <div className="flex-1 p-2 bg-gray-50 border rounded-md">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Retour</label>
-                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold" />
+                <div className="flex gap-3">
+                  <div className="flex-1 p-4 bg-gray-50 border rounded-xl">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Retour</label>
+                    <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2" />
                   </div>
-                  <div className="w-20 p-2 bg-gray-50 border rounded-md">
-                    <label className="block text-[6px] font-black text-gray-400 uppercase">Heure</label>
-                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold" />
+                  <div className="w-28 p-4 bg-gray-50 border rounded-xl">
+                    <label className="block text-[10px] font-black text-gray-400 uppercase">Heure</label>
+                    <input type="time" value={endTime} onChange={e => setEndTime(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2" />
                   </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 lg:grid-cols-3 gap-1.5">
-                <div className="p-2 bg-gray-50 border rounded-md">
-                  <label className="block text-[6px] font-black text-gray-400 uppercase">Service</label>
-                  <select value={withDriver} onChange={e => setWithDriver(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="p-4 bg-gray-50 border rounded-xl relative">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase">Service souhaité</label>
+                  <select value={withDriver} onChange={e => setWithDriver(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2 appearance-none">
                     <option value="Sans chauffeur">Sans chauffeur</option>
                     <option value="Avec chauffeur">Avec chauffeur</option>
                   </select>
+                  <ChevronDown size={16} className="absolute right-4 bottom-5 text-gray-400" />
                 </div>
-                <div className="p-2 bg-gray-50 border rounded-md">
-                  <label className="block text-[6px] font-black text-gray-400 uppercase">Places</label>
-                  <select value={passengerCount} onChange={e => setPassengerCount(e.target.value)} className="bg-transparent outline-none w-full text-[9px] font-bold">
-                    <option value="5">5 Places</option>
-                    <option value="7">7 Places</option>
+                <div className="p-4 bg-gray-50 border rounded-xl relative">
+                  <label className="block text-[10px] font-black text-gray-400 uppercase">Places assises</label>
+                  <select value={passengerCount} onChange={e => setPassengerCount(e.target.value)} className="bg-transparent outline-none w-full text-sm font-bold mt-2 appearance-none">
+                    <option value="5">Berline (5 places)</option>
+                    <option value="7">SUV / Van (7 places +)</option>
                   </select>
+                  <ChevronDown size={16} className="absolute right-4 bottom-5 text-gray-400" />
                 </div>
-                <div className="flex items-center justify-between p-2 bg-gray-100 rounded-md">
-                  <label className="text-[6px] font-black text-gray-400 uppercase">Qté</label>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-sm font-black">-</button>
-                    <span className="text-[10px] font-black">{quantity}</span>
-                    <button onClick={() => setQuantity(quantity + 1)} className="text-sm font-black">+</button>
+                <div className="flex items-center justify-between p-4 bg-gray-100 rounded-xl">
+                  <label className="text-[10px] font-black text-gray-400 uppercase">Quantité</label>
+                  <div className="flex items-center gap-6">
+                    <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="text-2xl font-black hover:text-[#ff4d00] transition-colors">-</button>
+                    <span className="text-base font-black">{quantity}</span>
+                    <button onClick={() => setQuantity(quantity + 1)} className="text-2xl font-black hover:text-[#ff4d00] transition-colors">+</button>
                   </div>
                 </div>
               </div>
 
-              <button onClick={handleSearch} className="w-full bg-[#ff4d00] hover:bg-black text-white font-black rounded-lg py-2.5 text-[10px] flex items-center justify-center gap-1.5 uppercase mt-1">
-                <Search size={12} /> Dispos
+              <button onClick={handleSearch} className="w-full bg-[#ff4d00] hover:bg-black text-white font-black rounded-2xl py-5 text-base flex items-center justify-center gap-3 uppercase shadow-lg active:scale-95 transition-all mt-2">
+                <Search size={22} /> Trouver mon véhicule
               </button>
             </div>
           )}
         </div>
       </div>
 
-      <div ref={resultsRef} className="bg-gray-50 pb-20">
+      <div ref={resultsRef} className="bg-gray-50 pb-24">
         {searchResults ? (
-          <div className="max-w-6xl mx-auto px-4 pt-10">
-            <h2 className="text-xl font-black italic uppercase tracking-tighter">Véhicules <span className="text-[#ff4d00]">Trouvés</span></h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+          <div className="max-w-7xl mx-auto px-6 pt-16">
+            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-center sm:text-left">
+              Véhicules <span className="text-[#ff4d00]">Trouvés</span>
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
               {searchResults.length > 0 ? (
                 searchResults.map(car => <CarCard key={car.id} car={car} />)
               ) : (
-                <p className="col-span-full text-gray-400 font-bold text-xs">Aucun véhicule ne correspond à vos critères.</p>
+                <p className="col-span-full text-gray-400 font-bold text-base text-center py-24">
+                  Aucun véhicule disponible pour ces critères actuellement.
+                </p>
               )}
             </div>
           </div>

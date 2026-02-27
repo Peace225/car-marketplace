@@ -18,9 +18,8 @@ export default function Navbar() {
   }, [isOpen]);
 
   const menuLinks = [
-    { name: "Accueil", to: "/" },
-    { name: "Vente", to: "/vente" },
-    { name: "Location", to: "/location" },
+    { name: "Catalogue", href: "https://catalogue.auto-lifeservice.com" }, // Pointant vers ton domaine configuré
+    { name: "Contact", to: "/contact" },
   ];
 
   return (
@@ -35,28 +34,38 @@ export default function Navbar() {
             className="w-16 h-16 object-contain" 
           />
         </div>
-        <h1 className="font-black text-2xl text-white italic tracking-tighter uppercase leading-none">
+        <h1 className="font-black text-2xl md:text-3xl text-white italic tracking-tighter uppercase leading-none">
           Auto<span className="text-[#fb201e]">Life</span>
         </h1>
       </Link>
 
       {/* --- MENU DESKTOP --- */}
-      <div className="hidden md:flex gap-6 items-center">
+      <div className="hidden md:flex gap-8 items-center">
         {menuLinks.map((link) => (
-          <Link
-            key={link.name}
-            to={link.to}
-            className="text-[10px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
-          >
-            {link.name}
-          </Link>
+          link.href ? (
+            <a
+              key={link.name}
+              href={link.href}
+              className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
+            >
+              {link.name}
+            </a>
+          ) : (
+            <Link
+              key={link.name}
+              to={link.to}
+              className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
+            >
+              {link.name}
+            </Link>
+          )
         ))}
-        <div className="h-4 w-[1px] bg-white/20 mx-2"></div>
+        <div className="h-5 w-[1px] bg-white/20 mx-2"></div>
         
-        {/* BOUTON CONNECTÉ AU REGISTER */}
+        {/* BOUTON IDENTIFIER AGRANDI */}
         <Link 
           to="/register" 
-          className="bg-white text-black px-6 py-2.5 rounded-full text-[9px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center"
+          className="bg-white text-black px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center"
         >
           S'identifier
         </Link>
@@ -68,7 +77,7 @@ export default function Navbar() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Menu"
       >
-        {isOpen ? <X size={32} /> : <Menu size={32} />}
+        {isOpen ? <X size={36} /> : <Menu size={36} />}
       </button>
 
       {/* --- MENU MOBILE (Plein écran) --- */}
@@ -77,41 +86,56 @@ export default function Navbar() {
           isOpen ? "opacity-100 visible" : "opacity-0 invisible delay-300" 
         }`}
       >
-        <div className="mt-32 flex flex-col gap-10 overflow-y-auto">
-          {menuLinks.map((link, index) => (
-            <Link
-              key={link.name}
-              to={link.to}
-              onClick={() => setIsOpen(false)}
-              // Délai progressif pour l'animation en cascade
-              style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
-              className={`text-4xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
-                isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
-              }`}
-            >
-              {/* Le texte se décale au survol */}
-              <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
-                {link.name}
-              </span>
-              {/* Le chevron réagit au survol */}
-              <ChevronRight className="text-white/10 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={36} />
-            </Link>
-          ))}
+        <div className="mt-32 flex flex-col gap-12 overflow-y-auto">
+          {menuLinks.map((link, index) => {
+            const commonClasses = `text-5xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
+              isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
+            }`;
+
+            const linkContent = (
+              <>
+                <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
+                  {link.name}
+                </span>
+                <ChevronRight className="text-white/10 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={44} />
+              </>
+            );
+
+            return link.href ? (
+              <a
+                key={link.name}
+                href={link.href}
+                style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
+                className={commonClasses}
+              >
+                {linkContent}
+              </a>
+            ) : (
+              <Link
+                key={link.name}
+                to={link.to}
+                onClick={() => setIsOpen(false)}
+                style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
+                className={commonClasses}
+              >
+                {linkContent}
+              </Link>
+            );
+          })}
           
-          {/* Ligne de séparation qui s'étire */}
           <div 
             style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
-            className={`h-[1px] w-full bg-white/10 my-2 origin-left transition-all duration-700 ${
+            className={`h-[1px] w-full bg-white/10 my-4 origin-left transition-all duration-700 ${
               isOpen ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
             }`}
           ></div>
           
-          {/* BOUTON MOBILE CONNECTÉ AU REGISTER */}
+          {/* BOUTON MOBILE AGRANDI */}
           <Link 
             to="/register"
             onClick={() => setIsOpen(false)}
             style={{ transitionDelay: `${isOpen ? 500 : 0}ms` }}
-            className={`w-full bg-[#fb201e] text-white py-5 rounded-2xl font-black uppercase tracking-[0.2em] shadow-xl shadow-red-600/20 active:scale-95 transition-all duration-500 text-center transform ${
+            className={`w-full bg-[#fb201e] text-white py-6 rounded-2xl text-xl font-black uppercase tracking-[0.2em] shadow-xl shadow-red-600/20 active:scale-95 transition-all duration-500 text-center transform ${
               isOpen ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             }`}
           >
