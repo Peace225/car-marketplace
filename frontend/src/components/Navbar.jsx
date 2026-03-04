@@ -17,7 +17,6 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
-  // Correction : Le catalogue pointe maintenant vers une route locale
   const menuLinks = [
     { name: "Catalogue", to: "/catalogue" }, 
     { name: "Contact", to: "/contact" },
@@ -43,7 +42,6 @@ export default function Navbar() {
       {/* --- MENU DESKTOP --- */}
       <div className="hidden md:flex gap-8 items-center">
         {menuLinks.map((link) => (
-          // Le code gère maintenant proprement uniquement des composants Link
           <Link
             key={link.name}
             to={link.to}
@@ -68,7 +66,7 @@ export default function Navbar() {
         onClick={() => setIsOpen(!isOpen)}
         aria-label="Menu"
       >
-        {isOpen ? <X size={36} /> : <Menu size={36} />}
+        {isOpen ? <X size={40} /> : <Menu size={40} />}
       </button>
 
       {/* --- MENU MOBILE (Plein écran) --- */}
@@ -77,27 +75,27 @@ export default function Navbar() {
           isOpen ? "opacity-100 visible" : "opacity-0 invisible delay-300" 
         }`}
       >
-        <div className="mt-32 flex flex-col gap-12 overflow-y-auto">
+        <div className="mt-32 flex flex-col gap-14 overflow-y-auto">
           {menuLinks.map((link, index) => (
             <Link
               key={link.name}
               to={link.to}
               onClick={() => setIsOpen(false)}
               style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
-              className={`text-5xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
+              className={`text-6xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
                 isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
               }`}
             >
               <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
                 {link.name}
               </span>
-              <ChevronRight className="text-white/10 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={44} />
+              <ChevronRight className="text-white/20 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={56} />
             </Link>
           ))}
           
           <div 
             style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
-            className={`h-[1px] w-full bg-white/10 my-4 origin-left transition-all duration-700 ${
+            className={`h-[2px] w-full bg-white/10 my-6 origin-left transition-all duration-700 ${
               isOpen ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
             }`}
           ></div>
@@ -106,7 +104,7 @@ export default function Navbar() {
             to="/register"
             onClick={() => setIsOpen(false)}
             style={{ transitionDelay: `${isOpen ? 500 : 0}ms` }}
-            className={`w-full bg-[#fb201e] text-white py-6 rounded-2xl text-xl font-black uppercase tracking-[0.2em] shadow-xl shadow-red-600/20 active:scale-95 transition-all duration-500 text-center transform ${
+            className={`w-full bg-[#fb201e] text-white py-8 rounded-2xl text-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-red-600/30 active:scale-95 transition-all duration-500 text-center transform ${
               isOpen ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
             }`}
           >
