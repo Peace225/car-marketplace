@@ -9,6 +9,8 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
+import Catalog from './components/Catalog';
+import CarDetails from './components/CarDetails';
 
 export default function App() {
   return (
@@ -23,6 +25,9 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/catalogue" element={<Catalog />} />
+            {/* La route dynamique magique : ":id" capture le numéro de la voiture */}
+          <Route path="/voiture/:id" element={<CarDetails />} />
         </Routes>
       </div>
       <Footer />

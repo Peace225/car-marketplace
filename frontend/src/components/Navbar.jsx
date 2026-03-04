@@ -17,8 +17,9 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
+  // Correction : Le catalogue pointe maintenant vers une route locale
   const menuLinks = [
-    { name: "Catalogue", href: "https://catalogue.auto-lifeservice.com" }, // Pointant vers ton domaine configuré
+    { name: "Catalogue", to: "/catalogue" }, 
     { name: "Contact", to: "/contact" },
   ];
 
@@ -42,27 +43,17 @@ export default function Navbar() {
       {/* --- MENU DESKTOP --- */}
       <div className="hidden md:flex gap-8 items-center">
         {menuLinks.map((link) => (
-          link.href ? (
-            <a
-              key={link.name}
-              href={link.href}
-              className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
-            >
-              {link.name}
-            </a>
-          ) : (
-            <Link
-              key={link.name}
-              to={link.to}
-              className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
-            >
-              {link.name}
-            </Link>
-          )
+          // Le code gère maintenant proprement uniquement des composants Link
+          <Link
+            key={link.name}
+            to={link.to}
+            className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
+          >
+            {link.name}
+          </Link>
         ))}
         <div className="h-5 w-[1px] bg-white/20 mx-2"></div>
         
-        {/* BOUTON IDENTIFIER AGRANDI */}
         <Link 
           to="/register" 
           className="bg-white text-black px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center"
@@ -87,41 +78,22 @@ export default function Navbar() {
         }`}
       >
         <div className="mt-32 flex flex-col gap-12 overflow-y-auto">
-          {menuLinks.map((link, index) => {
-            const commonClasses = `text-5xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
-              isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
-            }`;
-
-            const linkContent = (
-              <>
-                <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
-                  {link.name}
-                </span>
-                <ChevronRight className="text-white/10 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={44} />
-              </>
-            );
-
-            return link.href ? (
-              <a
-                key={link.name}
-                href={link.href}
-                style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
-                className={commonClasses}
-              >
-                {linkContent}
-              </a>
-            ) : (
-              <Link
-                key={link.name}
-                to={link.to}
-                onClick={() => setIsOpen(false)}
-                style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
-                className={commonClasses}
-              >
-                {linkContent}
-              </Link>
-            );
-          })}
+          {menuLinks.map((link, index) => (
+            <Link
+              key={link.name}
+              to={link.to}
+              onClick={() => setIsOpen(false)}
+              style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
+              className={`text-5xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
+                isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
+              }`}
+            >
+              <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
+                {link.name}
+              </span>
+              <ChevronRight className="text-white/10 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={44} />
+            </Link>
+          ))}
           
           <div 
             style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
@@ -130,7 +102,6 @@ export default function Navbar() {
             }`}
           ></div>
           
-          {/* BOUTON MOBILE AGRANDI */}
           <Link 
             to="/register"
             onClick={() => setIsOpen(false)}
