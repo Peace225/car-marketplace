@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, ChevronRight } from "lucide-react";
+import { Menu, X, ChevronRight, Phone } from "lucide-react";
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
 
-  // --- BLOQUER LE SCROLL QUAND LE MENU EST OUVERT ---
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -17,9 +16,9 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
+  // Suppression du lien Contact
   const menuLinks = [
-    { name: "Catalogue", to: "/catalogue" }, 
-    { name: "Contact", to: "/contact" },
+    { name: "Catalogue", to: "/catalogue" },
   ];
 
   return (
@@ -34,7 +33,7 @@ export default function Navbar() {
             className="w-16 h-16 object-contain" 
           />
         </div>
-        <h1 className="font-black text-2xl md:text-3xl text-white italic tracking-tighter uppercase leading-none">
+        <h1 className="font-black text-2xl md:text-4xl text-white italic tracking-tighter uppercase leading-none">
           Auto<span className="text-[#fb201e]">Life</span>
         </h1>
       </Link>
@@ -45,71 +44,69 @@ export default function Navbar() {
           <Link
             key={link.name}
             to={link.to}
-            className="text-[13px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
+            className="text-[14px] font-black uppercase tracking-[0.2em] text-white hover:text-[#fb201e] transition-colors duration-300"
           >
             {link.name}
           </Link>
         ))}
         <div className="h-5 w-[1px] bg-white/20 mx-2"></div>
         
-        <Link 
-          to="/register" 
-          className="bg-white text-black px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center"
+        {/* Remplacement de S'identifier par Service Client */}
+        <a 
+          href="tel:+2250104" 
+          className="bg-white text-black px-10 py-4 rounded-full text-[14px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center flex items-center gap-2"
         >
-          S'identifier
-        </Link>
+          <Phone size={16} />
+         +225 0151 10 48 39
+        </a>
       </div>
 
-      {/* --- BOUTON BURGER MOBILE --- */}
+      {/* --- BOUTON BURGER --- */}
       <button 
-        className="md:hidden text-white relative z-[110] p-2 hover:text-[#fb201e] transition-colors duration-300" 
+        className="md:hidden text-white relative z-[110] p-2" 
         onClick={() => setIsOpen(!isOpen)}
-        aria-label="Menu"
       >
-        {isOpen ? <X size={40} /> : <Menu size={40} />}
+        {isOpen ? <X size={48} /> : <Menu size={48} />}
       </button>
 
-      {/* --- MENU MOBILE (Plein écran) --- */}
+      {/* --- MENU MOBILE PLEIN ÉCRAN --- */}
       <div 
-        className={`fixed inset-0 bg-black z-[100] flex flex-col p-8 md:hidden transition-all duration-500 ease-in-out ${
-          isOpen ? "opacity-100 visible" : "opacity-0 invisible delay-300" 
+        className={`fixed inset-0 bg-black z-[100] flex flex-col p-6 md:hidden transition-all duration-500 ${
+          isOpen ? "opacity-100 visible" : "opacity-0 invisible" 
         }`}
       >
-        <div className="mt-32 flex flex-col gap-14 overflow-y-auto">
+        <div className="mt-32 flex flex-col gap-8">
           {menuLinks.map((link, index) => (
             <Link
               key={link.name}
               to={link.to}
               onClick={() => setIsOpen(false)}
               style={{ transitionDelay: `${isOpen ? 100 + index * 100 : 0}ms` }}
-              className={`text-6xl font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
+              className={`text-[18vw] font-black uppercase italic text-white flex justify-between items-center group transition-all duration-500 transform ${
                 isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
               }`}
             >
-              <span className="group-hover:text-[#fb201e] group-hover:translate-x-3 transition-all duration-300 ease-out">
+              <span className="leading-[0.9] tracking-tighter">
                 {link.name}
               </span>
-              <ChevronRight className="text-white/20 group-hover:text-[#fb201e] group-hover:-translate-x-2 transition-all duration-300" size={56} />
+              <ChevronRight size={70} className="text-[#fb201e] opacity-90" />
             </Link>
           ))}
           
-          <div 
-            style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
-            className={`h-[2px] w-full bg-white/10 my-6 origin-left transition-all duration-700 ${
-              isOpen ? "scale-x-100 opacity-100" : "scale-x-0 opacity-0"
-            }`}
-          ></div>
+          <div className="h-[3px] w-full bg-white/10 my-6"></div>
           
-          <Link 
-            to="/register"
+          {/* Bouton Appel Mobile XL */}
+          <a 
+            href="tel:+2250104"
             onClick={() => setIsOpen(false)}
-            style={{ transitionDelay: `${isOpen ? 500 : 0}ms` }}
-            className={`w-full bg-[#fb201e] text-white py-8 rounded-2xl text-2xl font-black uppercase tracking-[0.2em] shadow-2xl shadow-red-600/30 active:scale-95 transition-all duration-500 text-center transform ${
-              isOpen ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
+            style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
+            className={`w-full bg-[#fb201e] text-white py-10 rounded-2xl text-4xl font-black uppercase italic tracking-tighter shadow-2xl shadow-red-600/50 transition-all duration-500 text-center flex items-center justify-center gap-4 transform ${
+              isOpen ? "translate-y-0 opacity-100" : "-translate-y-8 opacity-0"
             }`}
           >
-            S'identifier
-          </Link>
+            <Phone size={40} />
+            +225 0151 10 48 39
+          </a>
         </div>
       </div>
     </nav>
