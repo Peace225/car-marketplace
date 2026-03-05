@@ -18,6 +18,7 @@ export const carsData = [
     image: "/images/2.jpg",
     description: "Le premier SUV de Rolls-Royce. L'élégance britannique capable de franchir tous les terrains."
   },
+
   // --- LAMBORGHINI ---
   {
     id: "3",
@@ -215,8 +216,10 @@ export const carsData = [
     image: "/images/22.jpg",
     description: "L'aérodynamisme au service de la performance. Une supercar légère et futuriste."
   },
+
+  // --- NOUVEAUX AJOUTS (Correction des ID) ---
   {
-    id: "14",
+    id: "23",
     brand: "Ferrari",
     model: "SF90 Stradale",
     price: "380 000 000 FCFA",
@@ -225,7 +228,7 @@ export const carsData = [
     description: "L'hypercar hybride de Maranello. 1000 chevaux pour une expérience de pilotage ultime."
   },
   {
-    id: "15",
+    id: "24",
     brand: "Ferrari",
     model: "Roma",
     price: "1 000 000 FCFA/jour",
@@ -233,10 +236,8 @@ export const carsData = [
     image: "/images/24.jpg",
     description: "L'élégance à l'italienne. Un design intemporel inspiré de la Dolce Vita des années 50."
   },
-
-  // --- ASTON MARTIN ---
   {
-    id: "16",
+    id: "25",
     brand: "Aston Martin",
     model: "DB11 V12",
     price: "155 000 000 FCFA",
@@ -245,7 +246,7 @@ export const carsData = [
     description: "La GT iconique de l'agent secret 007. Une beauté fatale et un moteur noble."
   },
   {
-    id: "17",
+    id: "26",
     brand: "Aston Martin",
     model: "DBX 707",
     price: "500 000 FCFA/jour",
@@ -253,10 +254,8 @@ export const carsData = [
     image: "/images/26.jpg",
     description: "Le SUV de luxe le plus puissant au monde. Sportivité sans compromis."
   },
-
-  // --- AUDI & BMW ---
   {
-    id: "18",
+    id: "27",
     brand: "Audi",
     model: "RSQ8",
     price: "280 000 FCFA/jour",
@@ -265,7 +264,7 @@ export const carsData = [
     description: "Le SUV coupé haute performance d'Audi Sport. Puissance discrète et efficace."
   },
   {
-    id: "19",
+    id: "28",
     brand: "BMW",
     model: "M8 Competition",
     price: "135 000 000 FCFA",
@@ -274,7 +273,7 @@ export const carsData = [
     description: "La BMW la plus puissante jamais produite. Luxe et sportivité fusionnés."
   },
   {
-    id: "20",
+    id: "29", // L'image 29 n'existait pas dans ton code, j'ai adapté pour suivre la logique
     brand: "BMW",
     model: "X7 M60i",
     price: "250 000 FCFA/jour",
@@ -282,10 +281,8 @@ export const carsData = [
     image: "/images/30.jpg",
     description: "Le luxe à l'état pur avec 7 places. Un confort impérial pour toute la famille."
   },
-
-  // --- HYPERCARS ---
   {
-    id: "21",
+    id: "30",
     brand: "Bugatti",
     model: "Chiron Super Sport",
     price: "2 500 000 000 FCFA",
@@ -294,7 +291,7 @@ export const carsData = [
     description: "Le chef-d'œuvre ultime de l'automobile. Vitesse et luxe extrêmes sans égal."
   },
   {
-    id: "22",
+    id: "31",
     brand: "McLaren",
     model: "720S Spider",
     price: "240 000 000 FCFA",

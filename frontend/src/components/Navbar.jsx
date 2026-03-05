@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { Menu, X, ChevronRight, Phone } from "lucide-react";
+import { Menu, X, ChevronRight, Phone, Lock } from "lucide-react"; // Ajout de l'icône Lock pour l'Admin
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,7 +16,6 @@ export default function Navbar() {
     };
   }, [isOpen]);
 
-  // Suppression du lien Contact
   const menuLinks = [
     { name: "Catalogue", to: "/catalogue" },
   ];
@@ -49,15 +48,24 @@ export default function Navbar() {
             {link.name}
           </Link>
         ))}
+
+        {/* NOUVEAU : Lien Admin Desktop */}
+        <Link
+          to="/login" // Ou "/dashboard" selon ta route
+          className="text-[12px] flex items-center gap-2 font-black uppercase tracking-[0.2em] text-white/50 hover:text-white transition-colors duration-300"
+        >
+          <Lock size={14} /> Admin
+        </Link>
+
         <div className="h-5 w-[1px] bg-white/20 mx-2"></div>
         
-        {/* Remplacement de S'identifier par Service Client */}
+        {/* Service Client */}
         <a 
-          href="tel:+2250104" 
+          href="tel:+2250151104839" 
           className="bg-white text-black px-10 py-4 rounded-full text-[14px] font-black uppercase tracking-widest hover:bg-[#fb201e] hover:text-white transition-all duration-300 text-center flex items-center gap-2"
         >
           <Phone size={16} />
-         +225 0151 10 48 39
+          +225 0151 10 48 39
         </a>
       </div>
 
@@ -65,6 +73,7 @@ export default function Navbar() {
       <button 
         className="md:hidden text-white relative z-[110] p-2" 
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="Ouvrir le menu"
       >
         {isOpen ? <X size={48} /> : <Menu size={48} />}
       </button>
@@ -92,12 +101,24 @@ export default function Navbar() {
               <ChevronRight size={70} className="text-[#fb201e] opacity-90" />
             </Link>
           ))}
+
+          {/* NOUVEAU : Lien Admin Mobile */}
+          <Link
+            to="/login" // Ou "/dashboard" selon ta route
+            onClick={() => setIsOpen(false)}
+            style={{ transitionDelay: `${isOpen ? 300 : 0}ms` }}
+            className={`text-2xl font-black uppercase italic text-white/50 flex items-center gap-4 transition-all duration-500 transform ${
+              isOpen ? "translate-x-0 opacity-100" : "-translate-x-12 opacity-0"
+            }`}
+          >
+            <Lock size={24} /> Espace Admin
+          </Link>
           
           <div className="h-[3px] w-full bg-white/10 my-6"></div>
           
           {/* Bouton Appel Mobile XL */}
           <a 
-            href="tel:+2250104"
+            href="tel:+2250151104839"
             onClick={() => setIsOpen(false)}
             style={{ transitionDelay: `${isOpen ? 400 : 0}ms` }}
             className={`w-full bg-[#fb201e] text-white py-10 rounded-2xl text-4xl font-black uppercase italic tracking-tighter shadow-2xl shadow-red-600/50 transition-all duration-500 text-center flex items-center justify-center gap-4 transform ${

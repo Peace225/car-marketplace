@@ -1,8 +1,10 @@
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
 import { getAnalytics } from "firebase/analytics";
+import { getFirestore } from "firebase/firestore"; 
+import { getStorage } from "firebase/storage";
+// 1. NOUVEAU : Importe la fonction d'authentification
+import { getAuth } from "firebase/auth"; 
 
-// Configuration de ton projet Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBNjZwoAc8wtYblSfBzP1aLftKYzugOA7Q",
   authDomain: "car-marketplace-68f1d.firebaseapp.com",
@@ -13,7 +15,10 @@ const firebaseConfig = {
   measurementId: "G-Q0YTLCETS3"
 };
 
-// Initialiser Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
 export const analytics = getAnalytics(app);
+export const db = getFirestore(app);
+export const storage = getStorage(app);
+
+// 2. NOUVEAU : Initialise et exporte "auth" pour tes pages Login et Register
+export const auth = getAuth(app);

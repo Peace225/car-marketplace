@@ -6,11 +6,14 @@ import Location from "./pages/Location";
 import Detail from "./pages/Detail";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
+import AdminDashboard from "./pages/AdminDashboard";
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
 import Catalog from './components/Catalog';
 import CarDetails from './components/CarDetails';
+
+// NOUVEAU : Importe le composant que l'on vient de créer
+import ImportData from './components/ImportData'; 
 
 export default function App() {
   return (
@@ -24,10 +27,12 @@ export default function App() {
           <Route path="/detail/:id" element={<Detail />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/dashboard" element={<AdminDashboard />} />
           <Route path="/catalogue" element={<Catalog />} />
-            {/* La route dynamique magique : ":id" capture le numéro de la voiture */}
           <Route path="/voiture/:id" element={<CarDetails />} />
+          
+          {/* NOUVEAU : La route temporaire pour importer tes voitures */}
+          <Route path="/import" element={<ImportData />} />
         </Routes>
       </div>
       <Footer />
