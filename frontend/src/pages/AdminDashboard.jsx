@@ -3,21 +3,20 @@ import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, Car, Settings, LogOut, 
   MessageSquare, Trash2, Share2, 
-  Check, Loader2, Image as ImageIcon, Users, Bell,
+  Check, Loader2, Image as ImageIcon, Users, 
   MapPin, Calendar, TrendingUp
 } from 'lucide-react';
 
 // Import Recharts pour le graphique
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Imports Firebase
-import { auth, db, storage } from '../firebaseConfig';
+// Imports Firebase (Sans Storage !)
+import { auth, db } from '../firebaseConfig';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { 
-  collection, addDoc, doc, deleteDoc, getDoc,
+  collection, addDoc, doc, deleteDoc, getDoc, setDoc,
   query, orderBy, onSnapshot
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
@@ -68,7 +67,6 @@ export default function AdminDashboard() {
       if (!user) {
         navigate("/login");
       } else {
-        // --- NOUVEAU : Récupération du profil spécifique à l'admin connecté ---
         try {
           const adminDocRef = doc(db, "admins", user.uid);
           const adminSnap = await getDoc(adminDocRef);
@@ -76,7 +74,6 @@ export default function AdminDashboard() {
           if (adminSnap.exists() && adminSnap.data().name) {
             setAdminProfile(prev => ({...prev, name: adminSnap.data().name}));
           } else {
-            // Si pas de nom défini, on utilise le début de son email
             const emailName = user.email ? user.email.split('@')[0] : "Admin";
             setAdminProfile(prev => ({...prev, name: emailName}));
           }
@@ -110,17 +107,46 @@ export default function AdminDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  // --- NOUVELLE FONCTION D'UPLOAD CLOUDINARY ---
   const handleSubmitCar = async (e) => {
     e.preventDefault();
     if (!formData.image) return alert("Photo requise");
+    
     setIsSubmitting(true);
+
     try {
-      const imgRef = ref(storage, `cars/${Date.now()}_${formData.image.name}`);
-      await uploadBytes(imgRef, formData.image);
-      const url = await getDownloadURL(imgRef);
+      // 1. Préparation de l'image pour Cloudinary
+      const data = new FormData();
+      data.append("file", formData.image);
+      data.append("upload_preset", "autolife_preset");
+      data.append("cloud_name", "dpje4d7xa");          
+      data.append("folder", "autolife_cars");         
+
+      // 2. Envoi vers l'API Cloudinary
+      const response = await fetch(
+        `https://api.cloudinary.com/v1_1/dpje4d7xa/image/upload`,
+        {
+          method: "POST",
+          body: data,
+        }
+      );
+
+      const uploadedImageData = await response.json();
+      
+      if (!response.ok) {
+         throw new Error(uploadedImageData.error?.message || "Erreur d'upload");
+      }
+
+      const imageUrl = uploadedImageData.secure_url;
+
+      // 3. Enregistrement dans Firestore
       await addDoc(collection(db, "cars"), {
-        ...formData, image: url, createdAt: new Date()
+        ...formData, 
+        image: imageUrl, // Lien Cloudinary
+        createdAt: new Date()
       });
+
+      // 4. Reset
       setFormData({ 
         brand: '', model: '', price: '', location: '', energy: 'Essence', 
         year: new Date().getFullYear().toString(), transmission: 'Automatique', 
@@ -128,8 +154,14 @@ export default function AdminDashboard() {
       });
       setImagePreview(null);
       setActiveTab('inventory'); 
-    } catch (e) { alert("Erreur d'envoi"); }
-    finally { setIsSubmitting(false); }
+      alert("Véhicule publié avec succès !");
+
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du véhicule :", error);
+      alert("Erreur lors de l'envoi de l'image. Vérifiez votre connexion.");
+    } finally { 
+      setIsSubmitting(false); 
+    }
   };
 
   if (isLoading) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-[#fb201e]" size={48} /></div>;
@@ -162,7 +194,7 @@ export default function AdminDashboard() {
       {/* --- CONTENT --- */}
       <main className="flex-1 overflow-y-auto bg-[#0a0a0a] flex flex-col">
         
-        {/* --- HEADER FIXE (Message de Bienvenue) --- */}
+        {/* --- HEADER FIXE --- */}
         <header className="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/5 p-8 flex justify-between items-center">
           <div>
             <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter leading-none">
@@ -179,7 +211,7 @@ export default function AdminDashboard() {
           </button>
         </header>
 
-        {/* --- VUES (Le contenu défile en dessous du header) --- */}
+        {/* --- VUES --- */}
         <div className="p-8">
           
           {/* VUE : DASHBOARD */}
