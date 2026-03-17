@@ -6,6 +6,23 @@ import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore
 // AJOUT : importation de MessageCircle pour l'icône WhatsApp
 import { LayoutGrid, Star, Crown, Diamond, Loader2, MessageCircle } from 'lucide-react';
 
+// --- FONCTION D'OPTIMISATION CLOUDINARY ---
+const getOptimizedImage = (url) => {
+  // Si ce n'est pas une image Cloudinary (ex: ancienne image Firebase), on la retourne telle quelle
+  if (!url || !url.includes('cloudinary.com')) return url;
+  
+  // On coupe l'URL au niveau de "upload/" et on insère nos réglages
+  // w_800,h_600 : redimensionne à 800x600 pixels
+  // c_fill : coupe l'image proprement sans l'écraser
+  // f_auto : convertit en WebP (plus léger) si le navigateur le supporte
+  // q_auto : ajuste la qualité automatiquement pour gagner en poids
+  const parts = url.split('upload/');
+  if (parts.length === 2) {
+    return `${parts[0]}upload/w_800,h_600,c_fill,f_auto,q_auto/${parts[1]}`;
+  }
+  return url;
+};
+
 export default function Catalog() {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -129,11 +146,12 @@ export default function Catalog() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-700">
             {filteredCars.map((car) => (
               <div key={car.id} className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group">
-                {/* Image */}
+                {/* Image Modifiée avec Cloudinary Optimisation */}
                 <div className="h-72 overflow-hidden relative">
                   <img 
-                    src={car.image} 
+                    src={getOptimizedImage(car.image)} 
                     alt={car.model} 
+                    loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
                   />
                   <div className="absolute bottom-4 left-4 flex gap-2">

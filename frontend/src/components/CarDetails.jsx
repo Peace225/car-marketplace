@@ -6,6 +6,19 @@ import { ArrowLeft, Share2, Check, MessageCircle, Loader2 } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
+// --- FONCTION D'OPTIMISATION CLOUDINARY (Version Haute Qualité) ---
+const getOptimizedHeroImage = (url) => {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  
+  // On redimensionne à 1200px de large maximum pour garder une super netteté sur la page détails
+  // f_auto,q_auto : format et qualité automatiques
+  const parts = url.split('upload/');
+  if (parts.length === 2) {
+    return `${parts[0]}upload/w_1200,f_auto,q_auto/${parts[1]}`;
+  }
+  return url;
+};
+
 export default function CarDetails() {
   const { id } = useParams();
   const [car, setCar] = useState(null);
@@ -102,9 +115,11 @@ export default function CarDetails() {
           {/* Galerie / Image */}
           <div className="relative group">
             <div className="aspect-[4/5] md:aspect-square rounded-[3rem] overflow-hidden border border-white/5 bg-[#111] shadow-2xl">
+              {/* Image Modifiée avec Cloudinary Optimisation & fetchpriority */}
               <img 
-                src={car.image} 
+                src={getOptimizedHeroImage(car.image)} 
                 alt={car.model} 
+                fetchpriority="high"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
               />
             </div>
@@ -132,7 +147,7 @@ export default function CarDetails() {
               {car.description}
             </p>
 
-            {/* --- NOUVEAU : Grille des caractéristiques --- */}
+            {/* --- Grille des caractéristiques --- */}
             <div className="grid grid-cols-2 gap-4 mb-10">
               <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex flex-col">
                 <span className="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Année</span>
