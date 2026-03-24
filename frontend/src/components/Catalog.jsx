@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { db } from '../firebaseConfig';
-// AJOUT : importation de addDoc et serverTimestamp pour le tracking
 import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'; 
-// AJOUT : importation de MessageCircle pour l'icône WhatsApp
-import { LayoutGrid, Star, Crown, Diamond, Loader2, MessageCircle } from 'lucide-react';
+import { LayoutGrid, Star, Crown, Diamond, Loader2, MessageCircle, Zap } from 'lucide-react';
 
-// --- FONCTION D'OPTIMISATION CLOUDINARY ---
 const getOptimizedImage = (url) => {
-  // Si ce n'est pas une image Cloudinary (ex: ancienne image Firebase), on la retourne telle quelle
   if (!url || !url.includes('cloudinary.com')) return url;
-  
-  // On coupe l'URL au niveau de "upload/" et on insère nos réglages
-  // w_800,h_600 : redimensionne à 800x600 pixels
-  // c_fill : coupe l'image proprement sans l'écraser
-  // f_auto : convertit en WebP (plus léger) si le navigateur le supporte
-  // q_auto : ajuste la qualité automatiquement pour gagner en poids
   const parts = url.split('upload/');
   if (parts.length === 2) {
     return `${parts[0]}upload/w_800,h_600,c_fill,f_auto,q_auto/${parts[1]}`;
@@ -27,6 +17,7 @@ export default function Catalog() {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState("Tous");
+  const [onlyAvailable, setOnlyAvailable] = useState(false);
 
   useEffect(() => {
     const fetchCars = async () => {
@@ -46,40 +37,46 @@ export default function Catalog() {
     fetchCars();
   }, []);
 
-  // --- LOGIQUE DE FILTRAGE ---
   const getNumericPrice = (priceStr) => {
+    if (!priceStr) return 0;
     return parseInt(priceStr.replace(/[^0-9]/g, ''), 10);
   };
 
   const filteredCars = cars.filter(car => {
-    const price = getNumericPrice(car.price);
-    if (activeFilter === "Tous") return true;
-    if (activeFilter === "Gold") return price >= 5000000 && price <= 6500000;
-    if (activeFilter === "Premium") return price > 6500000 && price <= 10000000;
-    if (activeFilter === "VIP") return price > 10000000;
+    if (onlyAvailable && car.availability !== 'Disponible') {
+      return false;
+    }
+
+    if (activeFilter !== "Tous") {
+      if (car.offer) {
+        return car.offer === activeFilter;
+      } else {
+        const price = getNumericPrice(car.price);
+        if (activeFilter === "Gold") return price >= 5000000 && price <= 6500000;
+        if (activeFilter === "Premium") return price > 6500000 && price <= 10000000;
+        if (activeFilter === "VIP") return price > 10000000;
+      }
+    }
     return true;
   });
 
   const filters = [
     { name: "Tous", icon: <LayoutGrid size={16} />, desc: "Tout le stock" },
-    { name: "Gold", icon: <Star size={16} />, desc: "5 - 6.5M" },
-    { name: "Premium", icon: <Crown size={16} />, desc: "7 - 10M" },
-    { name: "VIP", icon: <Diamond size={16} />, desc: "11M et +" },
+    { name: "Gold", icon: <Star size={16} fill="currentColor" />, desc: "5 - 6.5M" },
+    { name: "Premium", icon: <Crown size={16} fill="currentColor" />, desc: "7 - 10M" },
+    { name: "VIP", icon: <Diamond size={16} fill="currentColor" />, desc: "11M et +" },
   ];
 
-  // --- LOGIQUE DE TRACKING & WHATSAPP ---
   const handleContactAdmin = async (car) => {
     try {
-      // 1. Enregistrement silencieux du Lead dans Firebase
       await addDoc(collection(db, "messages"), {
         carId: car.id,
         carName: `${car.brand} ${car.model}`,
         carPrice: car.price,
         status: "Nouveau",
-        timestamp: serverTimestamp() // Heure exacte du clic
+        timestamp: serverTimestamp() 
       });
 
-      // 2. Redirection vers WhatsApp
       const adminWhatsApp = "2250151104839"; 
       const message = `Bonjour AutoLife, je suis très intéressé par la ${car.brand} ${car.model} affichée à ${car.price}. Est-elle toujours disponible ?`;
       
@@ -88,7 +85,6 @@ export default function Catalog() {
 
     } catch (error) {
       console.error("Erreur de tracking du lead:", error);
-      // En cas d'erreur de connexion, on redirige quand même le client !
       const adminWhatsApp = "2250151104839"; 
       window.open(`https://wa.me/${adminWhatsApp}`, '_blank');
     }
@@ -108,7 +104,7 @@ export default function Catalog() {
       <div className="max-w-7xl mx-auto">
         
         {/* Titre */}
-        <div className="flex flex-col items-center text-center mb-16 animate-in fade-in slide-in-from-top-4 duration-1000">
+        <div className="flex flex-col items-center text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
           <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-4">
             Nos <span className="text-[#fb201e]">Catalogues</span>
           </h2>
@@ -116,6 +112,21 @@ export default function Catalog() {
             Sélectionnez votre niveau de privilège
           </p>
           <div className="w-16 h-1 bg-[#fb201e] mt-6 rounded-full shadow-[0_0_20px_rgba(251,32,30,0.6)]"></div>
+        </div>
+
+        {/* --- LE BOUTON "DISPONIBLE" QUI CLIGNOTE --- */}
+        <div className="flex justify-center mb-10">
+          <button 
+            onClick={() => setOnlyAvailable(!onlyAvailable)}
+            className={`relative flex items-center justify-center gap-3 px-10 py-5 rounded-full text-[11px] md:text-[13px] font-black uppercase tracking-widest transition-all duration-300 border-2 z-10 ${
+              onlyAvailable 
+              ? "bg-[#22c55e] text-black border-[#22c55e] shadow-[0_0_40px_rgba(34,197,94,0.8)] scale-105" 
+              : "bg-[#050505] text-[#22c55e] border-[#22c55e] animate-pulse hover:bg-[#22c55e]/10 shadow-[0_0_25px_rgba(34,197,94,0.5)] hover:scale-105"
+            }`}
+          >
+            <Zap size={24} className={onlyAvailable ? "" : "animate-bounce text-[#22c55e] drop-shadow-md"} />
+            {onlyAvailable ? "Affichage : Dispo sur parc ✅" : "🚗 Voir les dispos sur parc !"}
+          </button>
         </div>
 
         {/* --- BARRE DE FILTRES --- */}
@@ -145,11 +156,21 @@ export default function Catalog() {
         {filteredCars.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-700">
             {filteredCars.map((car) => (
-              <div key={car.id} className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group">
-                {/* Image Modifiée avec Cloudinary Optimisation */}
+              <div key={car.id} className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group relative">
+                
+                {car.availability && (
+                  <div className={`absolute top-4 right-4 z-10 text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
+                    car.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400 animate-pulse' : 
+                    car.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
+                    'bg-red-500/80 text-white border-red-400'
+                  }`}>
+                    {car.availability === 'Disponible' ? '✅ Dispo de suite' : car.availability}
+                  </div>
+                )}
+
                 <div className="h-72 overflow-hidden relative">
                   <img 
-                    src={getOptimizedImage(car.image)} 
+                    src={getOptimizedImage(car.images?.front || car.image)} 
                     alt={car.model} 
                     loading="lazy"
                     className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
@@ -161,7 +182,6 @@ export default function Catalog() {
                   </div>
                 </div>
 
-                {/* Contenu */}
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-4">
                     <div>
@@ -176,9 +196,7 @@ export default function Catalog() {
                       <span className="text-[#fb201e] text-xl font-black italic">{car.price}</span>
                     </div>
                     
-                    {/* BOUTONS D'ACTION */}
                     <div className="flex gap-2">
-                      {/* Nouveau Bouton WhatsApp/Tracking */}
                       <button 
                         onClick={() => handleContactAdmin(car)}
                         title="Contacter sur WhatsApp"
@@ -187,7 +205,6 @@ export default function Catalog() {
                         <MessageCircle size={20} />
                       </button>
 
-                      {/* Bouton Détails Existant */}
                       <Link 
                         to={`/voiture/${car.id}`} 
                         title="Voir les détails"
@@ -205,7 +222,7 @@ export default function Catalog() {
         ) : (
           <div className="text-center py-32 bg-[#0a0a0a] rounded-[3rem] border border-white/5">
             <p className="text-white/20 font-black italic uppercase tracking-tighter text-2xl">
-              Aucun véhicule <span className="text-[#fb201e]">{activeFilter}</span> disponible
+              Aucun véhicule <span className="text-[#fb201e]">{activeFilter}</span> {onlyAvailable ? 'disponible sur parc' : 'trouvé'}
             </p>
           </div>
         )}

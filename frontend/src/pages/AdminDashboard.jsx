@@ -4,13 +4,11 @@ import {
   LayoutDashboard, Car, Settings, LogOut, 
   MessageSquare, Trash2, Share2, 
   Check, Loader2, Image as ImageIcon, Users, 
-  MapPin, Calendar, TrendingUp
+  MapPin, Calendar, TrendingUp, Star, Crown, Award
 } from 'lucide-react';
 
-// Import Recharts pour le graphique
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-// Imports Firebase (Sans Storage !)
 import { auth, db } from '../firebaseConfig';
 import { signOut, onAuthStateChanged } from 'firebase/auth';
 import { 
@@ -26,24 +24,29 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  
+  const [imagePreviews, setImagePreviews] = useState({
+    front: null, back: null, interior: null
+  });
 
   // --- ÉTATS DES DONNÉES ---
   const [cars, setCars] = useState([]);
   const [messages, setMessages] = useState([]);
   const [adminProfile, setAdminProfile] = useState({
-    name: "Admin", // Valeur par défaut
+    name: "Admin", 
     whatsapp: "+225 0151 10 48 39"
   });
 
-  // --- ÉTAT DU FORMULAIRE AJOUT ---
+  // --- ÉTAT DU FORMULAIRE ---
+  // NOUVEAU : Ajout de "availability" avec "Disponible" par défaut
   const [formData, setFormData] = useState({
-    brand: '', model: '', price: '', location: '', energy: 'Essence', 
+    brand: '', model: '', offer: 'Gold', availability: 'Disponible', location: '', energy: 'Essence', 
     year: new Date().getFullYear().toString(), transmission: 'Automatique',
-    type: 'Vente', description: '', image: null,
+    type: 'Vente', description: '', 
+    images: { front: null, back: null, interior: null }
   });
 
-  // --- LOGIQUE DU GRAPHIQUE (Calcul des leads par jour) ---
+  // --- LOGIQUE DU GRAPHIQUE ---
   const chartData = useMemo(() => {
     const last7Days = [...Array(7)].map((_, i) => {
       const d = new Date();
@@ -61,7 +64,6 @@ export default function AdminDashboard() {
     return last7Days;
   }, [messages]);
 
-  // 1. CHARGEMENT & SÉCURITÉ
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       if (!user) {
@@ -78,7 +80,7 @@ export default function AdminDashboard() {
             setAdminProfile(prev => ({...prev, name: emailName}));
           }
         } catch (error) {
-          console.error("Erreur lors de la récupération du profil admin:", error);
+          console.error("Erreur profil:", error);
         }
       }
     });
@@ -97,7 +99,6 @@ export default function AdminDashboard() {
     return () => { unsubscribeAuth(); unsubCars(); unsubMsgs(); };
   }, [navigate]);
 
-  // 2. FONCTIONS ACTIONS
   const handleLogout = () => signOut(auth).then(() => navigate("/login"));
 
   const copyCatalogLink = () => {
@@ -107,58 +108,78 @@ export default function AdminDashboard() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  // --- NOUVELLE FONCTION D'UPLOAD CLOUDINARY ---
+  const handleImageChange = (e, view) => {
+    const file = e.target.files[0];
+    if (file) {
+      setFormData(prev => ({ ...prev, images: { ...prev.images, [view]: file } }));
+      setImagePreviews(prev => ({ ...prev, [view]: URL.createObjectURL(file) }));
+    }
+  };
+
   const handleSubmitCar = async (e) => {
     e.preventDefault();
-    if (!formData.image) return alert("Photo requise");
+    
+    if (!formData.images.front || !formData.images.back || !formData.images.interior) {
+      return alert("Veuillez uploader les 3 photos (Avant, Arrière et Intérieur) !");
+    }
     
     setIsSubmitting(true);
 
     try {
-      // 1. Préparation de l'image pour Cloudinary
-      const data = new FormData();
-      data.append("file", formData.image);
-      data.append("upload_preset", "autolife_preset");
-      data.append("cloud_name", "dpje4d7xa");          
-      data.append("folder", "autolife_cars");         
+      const uploadImage = async (file) => {
+        const data = new FormData();
+        data.append("file", file);
+        data.append("upload_preset", "autolife_preset");
+        data.append("cloud_name", "dpje4d7xa");          
+        data.append("folder", "autolife_cars");         
 
-      // 2. Envoi vers l'API Cloudinary
-      const response = await fetch(
-        `https://api.cloudinary.com/v1_1/dpje4d7xa/image/upload`,
-        {
-          method: "POST",
-          body: data,
-        }
-      );
+        const response = await fetch(
+          `https://api.cloudinary.com/v1_1/dpje4d7xa/image/upload`,
+          { method: "POST", body: data }
+        );
 
-      const uploadedImageData = await response.json();
-      
-      if (!response.ok) {
-         throw new Error(uploadedImageData.error?.message || "Erreur d'upload");
-      }
+        const uploadedImageData = await response.json();
+        if (!response.ok) throw new Error(uploadedImageData.error?.message || "Erreur d'upload");
+        return uploadedImageData.secure_url;
+      };
 
-      const imageUrl = uploadedImageData.secure_url;
+      const [frontUrl, backUrl, interiorUrl] = await Promise.all([
+        uploadImage(formData.images.front),
+        uploadImage(formData.images.back),
+        uploadImage(formData.images.interior)
+      ]);
 
-      // 3. Enregistrement dans Firestore
       await addDoc(collection(db, "cars"), {
-        ...formData, 
-        image: imageUrl, // Lien Cloudinary
+        brand: formData.brand,
+        model: formData.model,
+        offer: formData.offer, 
+        availability: formData.availability, // NOUVEAU : Enregistrement
+        location: formData.location,
+        energy: formData.energy,
+        year: formData.year,
+        transmission: formData.transmission,
+        type: formData.type,
+        description: formData.description,
+        images: {
+          front: frontUrl,
+          back: backUrl,
+          interior: interiorUrl
+        },
         createdAt: new Date()
       });
 
-      // 4. Reset
       setFormData({ 
-        brand: '', model: '', price: '', location: '', energy: 'Essence', 
+        brand: '', model: '', offer: 'Gold', availability: 'Disponible', location: '', energy: 'Essence', 
         year: new Date().getFullYear().toString(), transmission: 'Automatique', 
-        type: 'Vente', description: '', image: null 
+        type: 'Vente', description: '', images: { front: null, back: null, interior: null } 
       });
-      setImagePreview(null);
+      setImagePreviews({ front: null, back: null, interior: null });
       setActiveTab('inventory'); 
-      alert("Véhicule publié avec succès !");
+      alert(`Véhicule publié avec succès dans l'offre ${formData.offer} !`);
 
     } catch (error) {
       console.error("Erreur lors de l'ajout du véhicule :", error);
-      alert("Erreur lors de l'envoi de l'image. Vérifiez votre connexion.");
+      alert("Erreur lors de l'envoi des images. Vérifiez votre connexion.");
     } finally { 
       setIsSubmitting(false); 
     }
@@ -217,7 +238,6 @@ export default function AdminDashboard() {
           {/* VUE : DASHBOARD */}
           {activeTab === 'dashboard' && (
             <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div className="bg-[#111] p-8 rounded-[2rem] border border-white/5 shadow-2xl hover:border-white/10 transition-colors">
                   <Users className="text-blue-500 mb-4" size={28} />
@@ -289,6 +309,26 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
+                  {/* NOUVEAU : Offre & Disponibilité */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Catégorie d'Offre</label>
+                      <select required value={formData.offer} onChange={e => setFormData({...formData, offer: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors font-bold uppercase appearance-none cursor-pointer">
+                        <option value="Gold">🌟 Formule Gold</option>
+                        <option value="Premium">🏆 Formule Premium</option>
+                        <option value="VIP">👑 Formule VIP</option>
+                      </select>
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Disponibilité</label>
+                      <select required value={formData.availability} onChange={e => setFormData({...formData, availability: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors font-bold uppercase appearance-none cursor-pointer">
+                        <option value="Disponible">✅ Disponible</option>
+                        <option value="En arrivage">🚢 En arrivage</option>
+                        <option value="Vendu">❌ Vendu</option>
+                      </select>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase text-white/30 ml-2">Localisation</label>
@@ -326,32 +366,39 @@ export default function AdminDashboard() {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-white/30 ml-2">Prix (ex: 7 500 000 FCFA)</label>
-                    <input type="text" required value={formData.price} onChange={e => setFormData({...formData, price: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors text-[#fb201e] font-black" />
-                  </div>
-
-                  <div className="space-y-1">
                     <label className="text-[9px] font-black uppercase text-white/30 ml-2">Description technique</label>
                     <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs h-28 outline-none focus:border-[#fb201e] transition-colors resize-none"></textarea>
                   </div>
 
-                  <div className="relative h-40 border-2 border-dashed border-white/10 rounded-3xl flex flex-col items-center justify-center bg-black overflow-hidden cursor-pointer hover:border-[#fb201e]/50 transition-colors group">
-                    {imagePreview ? (
-                      <img src={imagePreview} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-40 transition-opacity" alt="Preview" />
-                    ) : (
-                      <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-[#fb201e] transition-colors">
-                        <ImageIcon size={32} />
-                        <span className="text-[9px] font-black uppercase tracking-widest">Uploader la photo</span>
-                      </div>
-                    )}
-                    <input type="file" accept="image/*" onChange={(e) => { const file = e.target.files[0]; setFormData({...formData, image: file}); setImagePreview(URL.createObjectURL(file)); }} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                    {imagePreview && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"><span className="bg-[#fb201e] text-white text-[10px] font-black px-4 py-2 rounded-full uppercase">Changer l'image</span></div>}
+                  <div className="space-y-2">
+                    <label className="text-[9px] font-black uppercase text-white/30 ml-2">Photos du véhicule (3 requises)</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {[
+                        { key: 'front', label: 'Face Avant' },
+                        { key: 'back', label: 'Face Arrière' },
+                        { key: 'interior', label: 'Intérieur' }
+                      ].map((view) => (
+                        <div key={view.key} className="relative h-28 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center bg-black overflow-hidden cursor-pointer hover:border-[#fb201e]/50 transition-colors group">
+                          {imagePreviews[view.key] ? (
+                            <img src={imagePreviews[view.key]} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity" alt={view.label} />
+                          ) : (
+                            <div className="flex flex-col items-center gap-1 text-white/20 group-hover:text-[#fb201e] transition-colors">
+                              <ImageIcon size={20} />
+                            </div>
+                          )}
+                          <span className={`absolute bottom-2 text-[8px] font-black uppercase tracking-widest z-10 px-2 py-1 rounded bg-black/60 ${imagePreviews[view.key] ? 'text-white' : 'text-white/40'}`}>
+                            {view.label}
+                          </span>
+                          <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, view.key)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
-                  <button disabled={isSubmitting} className="w-full bg-[#fb201e] py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-600/20 disabled:opacity-50 mt-4">
-                    {isSubmitting ? "Publication en cours..." : "Valider le Stock"}
+                  <button disabled={isSubmitting} className="w-full bg-[#fb201e] py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-600/20 disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
+                    {isSubmitting ? <><Loader2 className="animate-spin" size={16}/> Publication...</> : "Valider le Stock"}
                   </button>
-              </form>
+               </form>
 
               {/* Liste de Stock */}
               <div className="bg-[#111] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col max-h-[900px]">
@@ -363,14 +410,39 @@ export default function AdminDashboard() {
                 <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
                   {cars.map(car => (
                     <div key={car.id} className="bg-black p-4 rounded-3xl border border-white/5 flex items-center gap-5 group hover:border-white/20 transition-all">
-                      <img src={car.image} className="w-28 h-20 object-cover rounded-2xl shadow-xl" alt={car.model} />
+                      <img src={car.images?.front || car.image} className="w-28 h-20 object-cover rounded-2xl shadow-xl" alt={car.model} />
                       <div className="flex-grow">
-                        <p className="font-black text-sm uppercase text-white leading-none mb-1">{car.brand} {car.model}</p>
-                        <div className="flex gap-2 text-[9px] text-white/40 font-bold uppercase tracking-wider mb-2">
+                        <div className="flex justify-between items-start">
+                          <p className="font-black text-sm uppercase text-white leading-none mb-1">{car.brand} {car.model}</p>
+                          
+                          {/* NOUVEAU : Badge de Disponibilité */}
+                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-widest ${
+                            car.availability === 'Disponible' ? 'bg-green-500/20 text-green-500' : 
+                            car.availability === 'En arrivage' ? 'bg-blue-500/20 text-blue-400' : 
+                            'bg-red-500/20 text-red-500'
+                          }`}>
+                            {car.availability || 'Disponible'}
+                          </span>
+                        </div>
+                        
+                        <div className="flex gap-2 text-[9px] text-white/40 font-bold uppercase tracking-wider mb-2 mt-1">
                           <span className="bg-white/5 px-2 py-0.5 rounded">{car.year}</span>
                           <span className="bg-white/5 px-2 py-0.5 rounded">{car.transmission}</span>
                         </div>
-                        <p className="text-[#fb201e] text-[11px] font-black">{car.price}</p>
+                        
+                        <div className="flex items-center gap-2">
+                          <p className={`text-[9px] font-black uppercase px-2 py-1 rounded inline-flex items-center gap-1 ${
+                            car.offer === 'VIP' ? 'bg-white text-black' : 
+                            car.offer === 'Premium' ? 'bg-[#ff4d00] text-white' : 
+                            'bg-yellow-400 text-black'
+                          }`}>
+                            {car.offer === 'VIP' && <Crown size={10}/>}
+                            {car.offer === 'Premium' && <Award size={10}/>}
+                            {car.offer === 'Gold' && <Star size={10} fill="currentColor"/>}
+                            {car.offer || 'Gold'}
+                          </p>
+                        </div>
+
                       </div>
                       <button onClick={() => deleteDoc(doc(db, "cars", car.id))} className="text-white/20 hover:text-red-500 hover:bg-red-500/10 p-3 rounded-xl transition-all mr-2">
                         <Trash2 size={20} />

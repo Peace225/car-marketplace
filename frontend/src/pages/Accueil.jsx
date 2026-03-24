@@ -36,7 +36,7 @@ export default function Accueil() {
   const [quantity, setQuantity] = useState(1);
   const [zone, setZone] = useState("Abidjan");
 
-  const isRental = activeTab === "A louer";
+  const isRental = activeTab === "Location";
 
   const dropdownData = {
     Marques: ["BMW", "Audi", "Mercedes", "Porsche", "Tesla", "Toyota", "Peugeot"],
@@ -93,24 +93,39 @@ export default function Accueil() {
   if (selectedOffre) return <ListeOffreVehicules offre={selectedOffre} onBack={() => setSelectedOffre(null)} allCars={mockCars} CarCard={CarCard} />;
 
   return (
-    <div className="w-full font-sans bg-white antialiased min-h-screen">
+    <div className="w-full font-sans bg-white antialiased min-h-screen flex flex-col">
       
+      {/* 1. HERO SECTION */}
       <div 
-        className="relative flex flex-col items-center px-4 min-h-[600px] pt-32 pb-16 bg-no-repeat bg-cover bg-center"
+        className="relative flex flex-col items-center justify-center px-4 min-h-[600px] pt-32 pb-16 bg-no-repeat bg-cover bg-center"
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=2070')" }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
-        
-        <div className="relative z-10 text-center mb-10 text-white px-2">
+        <div className="relative z-10 text-center text-white px-2">
           <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl">
             L'EXCELLENCE <br/><span className="text-[#ff4d00]">À CHAQUE VIRAGE</span>
           </h1>
         </div>
+      </div>
 
-        <div className="relative z-20 w-full max-w-[800px] bg-white rounded-2xl shadow-2xl p-6 sm:p-8">
+      {/* 2. LES OFFRES (Remontées juste après l'image) */}
+      {!searchResults && (
+        <div className="bg-gray-50">
+          <Offres onSelect={(offre) => setSelectedOffre(offre)} />
+        </div>
+      )}
+
+      {/* 3. LE FORMULAIRE DE RECHERCHE (Descendu) */}
+      <div className="w-full bg-white py-16 px-4">
+        <div className="max-w-[800px] mx-auto bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100 relative -mt-10 md:-mt-24 z-20">
           
+          <div className="flex flex-col items-center text-center mb-8">
+             <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Recherche <span className="text-[#ff4d00]">Spécifique</span></h2>
+             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trouvez le véhicule parfait selon vos critères</p>
+          </div>
+
           <div className="flex flex-wrap gap-2 mb-8 bg-gray-100 p-2 rounded-2xl w-full sm:w-fit mx-auto sm:mx-0">
-            {["Voitures neuves", "Voitures d'occasion", "A louer"].map((tab) => (
+            {["Voitures neuves", "Voitures d'occasion", "Location"].map((tab) => (
               <button 
                 key={tab} 
                 onClick={() => { setActiveTab(tab); setSearchResults(null); }}
@@ -146,7 +161,7 @@ export default function Accueil() {
                 ))}
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <InteractiveSlider label="Année Minimale" min={2010} max={2026} step={1} value={year} onChange={setYear} formatValue={v => v} />
+                <InteractiveSlider label="Année Minimale" min={2021} max={2050} step={1} value={year} onChange={setYear} formatValue={v => v} />
                 <InteractiveSlider label="Budget Maximum" min={5} max={150} step={5} value={budget/1000000} onChange={v => setBudget(v*1000000)} formatValue={v => `${v}M FCFA`} />
               </div>
               <button onClick={handleSearch} className="w-full bg-black hover:bg-[#ff4d00] text-white font-black py-5 rounded-2xl text-base flex items-center justify-center gap-3 uppercase tracking-widest mt-4 transition-all shadow-lg active:scale-95">
@@ -233,27 +248,36 @@ export default function Accueil() {
         </div>
       </div>
 
+      {/* 4. RÉSULTATS DE RECHERCHE OU VÉHICULES POPULAIRES */}
       <div ref={resultsRef} className="bg-gray-50 pb-24">
         {searchResults ? (
           <div className="max-w-7xl mx-auto px-6 pt-16">
-            <h2 className="text-4xl font-black italic uppercase tracking-tighter text-center sm:text-left">
-              Véhicules <span className="text-[#ff4d00]">Trouvés</span>
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mt-12">
+            <div className="flex justify-between items-end mb-12">
+               <div>
+                  <h2 className="text-4xl font-black italic uppercase tracking-tighter">
+                    Véhicules <span className="text-[#ff4d00]">Trouvés</span>
+                  </h2>
+                  <p className="text-xs font-bold text-gray-500 uppercase mt-2">{searchResults.length} Résultat(s)</p>
+               </div>
+               <button onClick={() => setSearchResults(null)} className="text-xs font-black text-gray-500 hover:text-black border-b border-gray-300 uppercase pb-1">
+                 Fermer la recherche
+               </button>
+            </div>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {searchResults.length > 0 ? (
                 searchResults.map(car => <CarCard key={car.id} car={car} />)
               ) : (
-                <p className="col-span-full text-gray-400 font-bold text-base text-center py-24">
+                <p className="col-span-full text-gray-400 font-bold text-base text-center py-24 bg-white border border-gray-200 rounded-3xl">
                   Aucun véhicule disponible pour ces critères actuellement.
                 </p>
               )}
             </div>
           </div>
         ) : (
-          <>
-            <Offres onSelect={(offre) => setSelectedOffre(offre)} />
+          <div className="bg-white">
             <SectionPopulaires cars={mockCars.slice(0, 3)} CarCard={CarCard} />
-          </>
+          </div>
         )}
       </div>
 
