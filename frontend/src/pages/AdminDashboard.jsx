@@ -38,7 +38,6 @@ export default function AdminDashboard() {
   });
 
   // --- ÉTAT DU FORMULAIRE ---
-  // NOUVEAU : Ajout de "availability" avec "Disponible" par défaut
   const [formData, setFormData] = useState({
     brand: '', model: '', offer: 'Gold', availability: 'Disponible', location: '', energy: 'Essence', 
     year: new Date().getFullYear().toString(), transmission: 'Automatique',
@@ -153,7 +152,7 @@ export default function AdminDashboard() {
         brand: formData.brand,
         model: formData.model,
         offer: formData.offer, 
-        availability: formData.availability, // NOUVEAU : Enregistrement
+        availability: formData.availability, 
         location: formData.location,
         energy: formData.energy,
         year: formData.year,
@@ -309,7 +308,6 @@ export default function AdminDashboard() {
                     </div>
                   </div>
 
-                  {/* NOUVEAU : Offre & Disponibilité */}
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
                       <label className="text-[9px] font-black uppercase text-white/30 ml-2">Catégorie d'Offre</label>
@@ -409,13 +407,32 @@ export default function AdminDashboard() {
                 
                 <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
                   {cars.map(car => (
-                    <div key={car.id} className="bg-black p-4 rounded-3xl border border-white/5 flex items-center gap-5 group hover:border-white/20 transition-all">
-                      <img src={car.images?.front || car.image} className="w-28 h-20 object-cover rounded-2xl shadow-xl" alt={car.model} />
-                      <div className="flex-grow">
+                    <div key={car.id} className="bg-black p-4 rounded-3xl border border-white/5 flex flex-col sm:flex-row items-start sm:items-center gap-5 group hover:border-white/20 transition-all">
+                      
+                      {/* NOUVEAU : Galerie des 3 images dans la liste */}
+                      <div className="flex gap-2 shrink-0">
+                        <div className="relative">
+                          <img src={car.images?.front || car.image} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Avant" />
+                          <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Avant</span>
+                        </div>
+                        {car.images?.back && (
+                          <div className="relative hidden lg:block">
+                            <img src={car.images.back} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Arrière" />
+                            <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Arrière</span>
+                          </div>
+                        )}
+                        {car.images?.interior && (
+                          <div className="relative hidden xl:block">
+                            <img src={car.images.interior} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Intérieur" />
+                            <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Intérieur</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex-grow w-full">
                         <div className="flex justify-between items-start">
                           <p className="font-black text-sm uppercase text-white leading-none mb-1">{car.brand} {car.model}</p>
                           
-                          {/* NOUVEAU : Badge de Disponibilité */}
                           <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-widest ${
                             car.availability === 'Disponible' ? 'bg-green-500/20 text-green-500' : 
                             car.availability === 'En arrivage' ? 'bg-blue-500/20 text-blue-400' : 
@@ -442,9 +459,9 @@ export default function AdminDashboard() {
                             {car.offer || 'Gold'}
                           </p>
                         </div>
-
                       </div>
-                      <button onClick={() => deleteDoc(doc(db, "cars", car.id))} className="text-white/20 hover:text-red-500 hover:bg-red-500/10 p-3 rounded-xl transition-all mr-2">
+                      
+                      <button onClick={() => deleteDoc(doc(db, "cars", car.id))} className="text-white/20 hover:text-red-500 hover:bg-red-500/10 p-3 rounded-xl transition-all self-end sm:self-center mr-2 shrink-0">
                         <Trash2 size={20} />
                       </button>
                     </div>

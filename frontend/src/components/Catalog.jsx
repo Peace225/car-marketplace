@@ -13,6 +13,109 @@ const getOptimizedImage = (url) => {
   return url;
 };
 
+// --- NOUVEAU SOUS-COMPOSANT : Carte interactive avec galerie ---
+const CarCard = ({ car, handleContactAdmin }) => {
+  // L'image principale par défaut est l'avant (ou l'ancienne image unique)
+  const defaultImage = car.images?.front || car.image;
+  const [activeImage, setActiveImage] = useState(defaultImage);
+
+  // S'assurer qu'on réinitialise si la voiture change
+  useEffect(() => {
+    setActiveImage(car.images?.front || car.image);
+  }, [car]);
+
+  return (
+    <div className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group relative">
+      
+      {/* Badge de Disponibilité */}
+      {car.availability && (
+        <div className={`absolute top-4 right-4 z-10 text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
+          car.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400 animate-pulse' : 
+          car.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
+          'bg-red-500/80 text-white border-red-400'
+        }`}>
+          {car.availability === 'Disponible' ? '✅ Dispo de suite' : car.availability}
+        </div>
+      )}
+
+      {/* --- ZONE D'IMAGE AVEC MINIATURES --- */}
+      <div className="h-72 overflow-hidden relative">
+        <img 
+          src={getOptimizedImage(activeImage)} 
+          alt={car.model} 
+          loading="lazy"
+          className="w-full h-full object-cover transition-transform duration-700" 
+        />
+        
+        {/* Badge Marque */}
+        <div className="absolute bottom-4 left-4 flex gap-2">
+          <span className="bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase border border-white/10">
+            {car.brand}
+          </span>
+        </div>
+
+        {/* NOUVEAU : Miniatures interactives */}
+        {car.images && (
+          <div className="absolute bottom-4 right-4 flex gap-2">
+            {['front', 'back', 'interior'].map((view) => (
+              car.images[view] && (
+                <button 
+                  key={view}
+                  onMouseEnter={() => setActiveImage(car.images[view])} // Change au survol
+                  onClick={() => setActiveImage(car.images[view])}      // Change au clic (pour mobile)
+                  className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all ${
+                    activeImage === car.images[view] 
+                    ? 'border-[#fb201e] scale-110 shadow-lg shadow-red-500/50' 
+                    : 'border-white/20 opacity-60 hover:opacity-100 hover:scale-105'
+                  }`}
+                >
+                  <img src={getOptimizedImage(car.images[view])} className="w-full h-full object-cover" alt={view} />
+                </button>
+              )
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* --- CONTENU --- */}
+      <div className="p-8">
+        <div className="flex justify-between items-start mb-4">
+          <div>
+            <h3 className="text-2xl font-black italic uppercase leading-none">{car.model}</h3>
+            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mt-2">Référence: {car.id.slice(0,6)}</p>
+          </div>
+        </div>
+        
+        <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
+          <div className="flex flex-col">
+            <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em] mb-1">Prix TTC</span>
+            <span className="text-[#fb201e] text-xl font-black italic">{car.price}</span>
+          </div>
+          
+          <div className="flex gap-2">
+            <button 
+              onClick={() => handleContactAdmin(car)}
+              title="Contacter sur WhatsApp"
+              className="bg-[#111] border border-white/5 text-green-500 h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#25D366] hover:text-white hover:border-[#25D366] shadow-lg transition-all duration-300"
+            >
+              <MessageCircle size={20} />
+            </button>
+
+            <Link 
+              to={`/voiture/${car.id}`} 
+              title="Voir les détails"
+              className="bg-white text-black h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#fb201e] hover:text-white transition-all duration-300 shadow-lg"
+            >
+              <LayoutGrid size={20} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+
 export default function Catalog() {
   const [cars, setCars] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -103,7 +206,6 @@ export default function Catalog() {
     <div className="min-h-screen bg-black text-white py-16 px-6">
       <div className="max-w-7xl mx-auto">
         
-        {/* Titre */}
         <div className="flex flex-col items-center text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
           <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-4">
             Nos <span className="text-[#fb201e]">Catalogues</span>
@@ -114,7 +216,6 @@ export default function Catalog() {
           <div className="w-16 h-1 bg-[#fb201e] mt-6 rounded-full shadow-[0_0_20px_rgba(251,32,30,0.6)]"></div>
         </div>
 
-        {/* --- LE BOUTON "DISPONIBLE" QUI CLIGNOTE --- */}
         <div className="flex justify-center mb-10">
           <button 
             onClick={() => setOnlyAvailable(!onlyAvailable)}
@@ -129,7 +230,6 @@ export default function Catalog() {
           </button>
         </div>
 
-        {/* --- BARRE DE FILTRES --- */}
         <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-16">
           {filters.map((f) => (
             <button
@@ -152,71 +252,11 @@ export default function Catalog() {
           ))}
         </div>
 
-        {/* --- GRILLE DE VOITURES --- */}
         {filteredCars.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-700">
+            {/* On appelle le nouveau composant interactif ici */}
             {filteredCars.map((car) => (
-              <div key={car.id} className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group relative">
-                
-                {car.availability && (
-                  <div className={`absolute top-4 right-4 z-10 text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
-                    car.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400 animate-pulse' : 
-                    car.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
-                    'bg-red-500/80 text-white border-red-400'
-                  }`}>
-                    {car.availability === 'Disponible' ? '✅ Dispo de suite' : car.availability}
-                  </div>
-                )}
-
-                <div className="h-72 overflow-hidden relative">
-                  <img 
-                    src={getOptimizedImage(car.images?.front || car.image)} 
-                    alt={car.model} 
-                    loading="lazy"
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-1000" 
-                  />
-                  <div className="absolute bottom-4 left-4 flex gap-2">
-                    <span className="bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase border border-white/10">
-                      {car.brand}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="p-8">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-2xl font-black italic uppercase leading-none">{car.model}</h3>
-                      <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mt-2">Référence: {car.id.slice(0,6)}</p>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
-                    <div className="flex flex-col">
-                      <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em] mb-1">Prix TTC</span>
-                      <span className="text-[#fb201e] text-xl font-black italic">{car.price}</span>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => handleContactAdmin(car)}
-                        title="Contacter sur WhatsApp"
-                        className="bg-[#111] border border-white/5 text-green-500 h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#25D366] hover:text-white hover:border-[#25D366] shadow-lg transition-all duration-300"
-                      >
-                        <MessageCircle size={20} />
-                      </button>
-
-                      <Link 
-                        to={`/voiture/${car.id}`} 
-                        title="Voir les détails"
-                        className="bg-white text-black h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#fb201e] hover:text-white transition-all duration-300 shadow-lg"
-                      >
-                        <LayoutGrid size={20} />
-                      </Link>
-                    </div>
-                  </div>
-
-                </div>
-              </div>
+              <CarCard key={car.id} car={car} handleContactAdmin={handleContactAdmin} />
             ))}
           </div>
         ) : (
