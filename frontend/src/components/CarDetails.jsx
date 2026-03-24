@@ -9,9 +9,6 @@ import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/fires
 // --- FONCTION D'OPTIMISATION CLOUDINARY (Version Haute Qualité) ---
 const getOptimizedHeroImage = (url) => {
   if (!url || !url.includes('cloudinary.com')) return url;
-  
-  // On redimensionne à 1200px de large maximum pour garder une super netteté sur la page détails
-  // f_auto,q_auto : format et qualité automatiques
   const parts = url.split('upload/');
   if (parts.length === 2) {
     return `${parts[0]}upload/w_1200,f_auto,q_auto/${parts[1]}`;
@@ -25,6 +22,9 @@ export default function CarDetails() {
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  // --- NOUVEAU : GESTION DE LA GALERIE ---
+  const [activeImage, setActiveImage] = useState(null);
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -33,7 +33,11 @@ export default function CarDetails() {
         const docSnap = await getDoc(docRef);
 
         if (docSnap.exists()) {
-          setCar({ id: docSnap.id, ...docSnap.data() });
+          const data = { id: docSnap.id, ...docSnap.data() };
+          setCar(data);
+          
+          // On définit la première image à afficher (nouvelle ou ancienne)
+          setActiveImage(data.images?.front || data.image);
         }
       } catch (error) {
         console.error("Erreur de récupération :", error);
@@ -55,20 +59,16 @@ export default function CarDetails() {
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
 
     try {
-      // 1. On crée une trace "Lead" dans Firebase pour l'Admin
       await addDoc(collection(db, "messages"), {
         carId: id,
         carName: `${car.brand} ${car.model}`,
         carPrice: car.price,
         status: "Nouveau",
-        timestamp: serverTimestamp(), // Heure du serveur Firebase
+        timestamp: serverTimestamp(),
       });
-
-      // 2. On redirige vers WhatsApp
       window.open(whatsappUrl, '_blank');
     } catch (error) {
       console.error("Erreur lors de l'envoi du signal :", error);
-      // En cas d'erreur réseau, on ouvre quand même WhatsApp pour ne pas perdre le client
       window.open(whatsappUrl, '_blank');
     } finally {
       setIsSending(false);
@@ -112,27 +112,81 @@ export default function CarDetails() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-start">
           
-          {/* Galerie / Image */}
-          <div className="relative group">
-            <div className="aspect-[4/5] md:aspect-square rounded-[3rem] overflow-hidden border border-white/5 bg-[#111] shadow-2xl">
-              {/* Image Modifiée avec Cloudinary Optimisation & fetchpriority */}
+          {/* --- COLONNE GAUCHE : GALERIE D'IMAGES --- */}
+          <div className="flex flex-col gap-4">
+            {/* Image Principale */}
+            <div className="relative group aspect-[4/5] md:aspect-square rounded-[3rem] overflow-hidden border border-white/5 bg-[#111] shadow-2xl">
               <img 
-                src={getOptimizedHeroImage(car.image)} 
+                src={getOptimizedHeroImage(activeImage)} 
                 alt={car.model} 
                 fetchpriority="high"
-                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000"
+                className="w-full h-full object-cover transition-transform duration-1000"
               />
+              
+              {/* Badges sur l'image */}
+              <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
+                {car.availability && (
+                  <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full backdrop-blur-md border shadow-lg ${
+                    car.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400' : 
+                    car.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
+                    'bg-red-500/80 text-white border-red-400'
+                  }`}>
+                    {car.availability}
+                  </span>
+                )}
+                {car.type && (
+                  <span className="bg-black/80 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 shadow-lg text-[10px] font-black uppercase tracking-widest text-[#fb201e]">
+                    {car.type}
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="absolute top-6 right-6 bg-black/80 backdrop-blur-md px-6 py-2 rounded-full border border-white/10 shadow-lg">
-              <span className={`text-[10px] font-black uppercase tracking-widest ${car.type === 'Vente' ? 'text-white' : 'text-[#fb201e]'}`}>
-                {car.type}
-              </span>
-            </div>
+
+            {/* --- NOUVEAU : MINIATURES --- */}
+            {car.images && (car.images.front || car.images.back || car.images.interior) && (
+              <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
+                {[
+                  { key: 'front', label: 'Face Avant' },
+                  { key: 'back', label: 'Arrière' },
+                  { key: 'interior', label: 'Intérieur' }
+                ].map((view) => {
+                  if (!car.images[view.key]) return null;
+
+                  return (
+                    <button 
+                      key={view.key}
+                      onClick={() => setActiveImage(car.images[view.key])}
+                      className={`relative w-24 h-20 md:w-32 md:h-24 rounded-2xl overflow-hidden border-2 flex-shrink-0 transition-all ${
+                        activeImage === car.images[view.key] 
+                        ? 'border-[#fb201e] scale-105 shadow-lg shadow-red-500/20' 
+                        : 'border-white/10 opacity-50 hover:opacity-100 hover:scale-105 hover:border-white/30'
+                      }`}
+                    >
+                      <img 
+                        src={getOptimizedHeroImage(car.images[view.key])} 
+                        className="w-full h-full object-cover" 
+                        alt={view.label} 
+                      />
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                        <span className="text-[8px] font-black text-white uppercase tracking-widest text-center px-1">
+                          {view.label}
+                        </span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {/* Informations Techniques */}
+          {/* --- COLONNE DROITE : INFORMATIONS TECHNIQUES --- */}
           <div className="flex flex-col h-full justify-center animate-in fade-in slide-in-from-right-8 duration-700">
             <div className="mb-8">
+              {car.offer && (
+                <span className="inline-block bg-white/5 border border-white/10 text-white/50 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest mb-4">
+                  Formule {car.offer}
+                </span>
+              )}
               <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-4">
                 {car.brand}
               </h1>
@@ -144,10 +198,10 @@ export default function CarDetails() {
             <div className="w-20 h-1.5 bg-[#fb201e] mb-10 shadow-[0_0_15px_rgba(251,32,30,0.5)]"></div>
 
             <p className="text-lg text-white/60 leading-relaxed mb-10 font-medium">
-              {car.description}
+              {car.description || "Véhicule premium inspecté et validé par l'équipe AutoLife."}
             </p>
 
-            {/* --- Grille des caractéristiques --- */}
+            {/* Grille des caractéristiques */}
             <div className="grid grid-cols-2 gap-4 mb-10">
               <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex flex-col">
                 <span className="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Année</span>
@@ -182,7 +236,7 @@ export default function CarDetails() {
                 className="bg-[#25D366] text-white py-5 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all shadow-xl shadow-green-600/10 active:scale-95 disabled:opacity-50 border border-transparent hover:border-white/20"
               >
                 {isSending ? <Loader2 className="animate-spin" size={18} /> : <MessageCircle size={18} />}
-                Négocier sur WhatsApp
+                Négocier
               </button>
 
               <button 
