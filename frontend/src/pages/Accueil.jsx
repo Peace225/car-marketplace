@@ -95,16 +95,24 @@ export default function Accueil() {
   return (
     <div className="w-full font-sans bg-white antialiased min-h-screen flex flex-col">
       
-      {/* 1. HERO SECTION */}
+     {/* 1. HERO SECTION */}
       <div 
         className="relative flex flex-col items-center justify-center px-4 min-h-[600px] pt-32 pb-16 bg-no-repeat bg-cover bg-center"
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=2070')" }}
       >
         <div className="absolute inset-0 bg-black/60"></div>
-        <div className="relative z-10 text-center text-white px-2">
-          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl">
-            L'EXCELLENCE <br/><span className="text-[#ff4d00]">À CHAQUE VIRAGE</span>
+        
+        <div className="relative z-10 text-center text-white px-2 flex flex-col items-center">
+          {/* Titre H1 modifié */}
+          <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl mb-6">
+            Recherchez-vous  <br/> un véhicule
+            <span className="text-[#f80202]"> de qualité ?</span>
           </h1>
+          
+          {/* Nouveau paragraphe ajouté */}
+          <p className="text-sm md:text-lg font-bold text-gray-200 max-w-3xl mx-auto leading-relaxed tracking-wide">
+            Un véhicule en provenance de la Chine ou du Canada ? Alors Auto Life Services met à votre disposition des véhicules de toutes marques
+          </p>
         </div>
       </div>
 

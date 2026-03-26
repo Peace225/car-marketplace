@@ -33,7 +33,7 @@ export default function Navbar() {
           />
         </div>
         <h1 className="font-black text-2xl md:text-4xl text-white italic tracking-tighter uppercase leading-none">
-          Auto<span className="text-[#fb201e]">Life</span>
+          Auto Life<span className="text-[#fb201e]"> Services</span>
         </h1>
       </Link>
 

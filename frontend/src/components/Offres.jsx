@@ -1,7 +1,10 @@
 import React from "react";
-import { Star, Award, Crown, CheckCircle, Car, ArrowRight, ShieldAlert } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { Star, Crown, CheckCircle, Car, ArrowRight, ShieldAlert } from "lucide-react";
 
 export default function Offres({ onSelect }) {
+  const navigate = useNavigate();
+
   const offres = [
     {
       id: "gold",
@@ -10,7 +13,6 @@ export default function Offres({ onSelect }) {
       iconBg: "bg-yellow-50",
       budget: "5 - 6,5 Millions",
       taxText: "Hors Taxes",
-      // Valeur épurée pour la douane
       douaneValue: "3,5 à 4,5 Millions",
       description: "L'essentiel pour un véhicule fiable au quotidien.",
       cardStyle: "bg-white border border-gray-100 hover:border-yellow-400 hover:shadow-2xl hover:shadow-yellow-500/10 text-gray-900",
@@ -35,7 +37,6 @@ export default function Offres({ onSelect }) {
       iconBg: "bg-[#ff4d00]/10",
       budget: "7 - 10 Millions",
       taxText: "Hors Taxes",
-      // Valeur épurée pour la douane
       douaneValue: "4,5 à 6,5 Millions",
       description: "Le compromis parfait alliant confort et standing.",
       cardStyle: "bg-white border-2 border-[#ff4d00] shadow-2xl shadow-[#ff4d00]/20 md:scale-105 z-10 text-gray-900",
@@ -62,7 +63,6 @@ export default function Offres({ onSelect }) {
       iconBg: "bg-gray-100", 
       budget: "11+ Millions",
       taxText: "Hors Taxes",
-      // Valeur épurée pour la douane
       douaneValue: "7 Millions et +",
       description: "L'excellence absolue, sans aucun compromis.",
       cardStyle: "bg-white border border-gray-200 shadow-xl hover:shadow-2xl hover:border-black transition-all text-gray-900",
@@ -135,7 +135,6 @@ export default function Offres({ onSelect }) {
                     </div>
                   </div>
                   
-                  {/* --- NOUVEAU : ENCART FRAIS DE DOUANE COLORÉ --- */}
                   <div className={`mt-5 border rounded-2xl p-4 flex items-start gap-3 transition-colors ${
                     isVIP ? 'bg-gray-100 border-gray-200' : 
                     isPremium ? 'bg-[#ff4d00]/5 border-[#ff4d00]/20' : 
@@ -183,9 +182,14 @@ export default function Offres({ onSelect }) {
                   ))}
                 </div>
 
+                {/* BOUTON DE REDIRECTION */}
                 <button 
-                  onClick={() => onSelect(offre)}
-                  className={`w-full py-5 rounded-[1.2rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${offre.buttonStyle}`}
+                  onClick={() => {
+                    if (onSelect) onSelect(offre);
+                    // Redirige vers la page catalogue avec le paramètre de la catégorie choisie
+                    navigate(`/catalogue?categorie=${offre.id}`); 
+                  }}
+                  className={`w-full mt-auto py-5 rounded-[1.2rem] text-[11px] font-black uppercase tracking-widest transition-all duration-300 flex items-center justify-center gap-2 ${offre.buttonStyle}`}
                 >
                   <Car size={16} /> 
                   <span>Sélectionner</span>
