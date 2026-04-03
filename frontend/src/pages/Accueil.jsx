@@ -1,5 +1,8 @@
 import React, { useState, useRef } from "react";
-import { Car, Tag, Key, MapPin, Calendar, Clock, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { 
+  Car, Tag, Key, MapPin, Calendar, Clock, Search, 
+  ChevronDown, ChevronRight, ShieldCheck, Banknote, CheckCircle 
+} from "lucide-react";
 
 import DetailVehicule from "../components/DetailVehicule";
 import Offres from "../components/Offres";
@@ -95,7 +98,7 @@ export default function Accueil() {
   return (
     <div className="w-full font-sans bg-white antialiased min-h-screen flex flex-col">
       
-     {/* 1. HERO SECTION */}
+      {/* 1. HERO SECTION */}
       <div 
         className="relative flex flex-col items-center justify-center px-4 min-h-[600px] pt-32 pb-16 bg-no-repeat bg-cover bg-center"
         style={{ backgroundImage: "url('https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=2070')" }}
@@ -103,33 +106,55 @@ export default function Accueil() {
         <div className="absolute inset-0 bg-black/60"></div>
         
         <div className="relative z-10 text-center text-white px-2 flex flex-col items-center">
-          {/* Titre H1 modifié */}
           <h1 className="text-4xl md:text-6xl font-black italic uppercase tracking-tighter leading-none drop-shadow-2xl mb-6">
-            Recherchez-vous  <br/> un véhicule
+            Souhaitez-vous importer  <br/> ou acheter un véhicule
             <span className="text-[#f80202]"> de qualité ?</span>
           </h1>
           
-          {/* Nouveau paragraphe ajouté */}
-          <p className="text-sm md:text-lg font-bold text-gray-200 max-w-3xl mx-auto leading-relaxed tracking-wide">
-            Un véhicule en provenance de la Chine ou du Canada ? Alors Auto Life Services met à votre disposition des véhicules de toutes marques
+          <p className="text-lg md:text-2xl font-bold text-gray-200 max-w-3xl mx-auto leading-relaxed tracking-wide mb-12">
+            Plus besoin de vous inquiéter, nous vous accompagnons dans toutes vos démarches.
           </p>
+
+          {/* Avantages réorganisés */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full max-w-6xl">
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <ShieldCheck className="mx-auto mb-3 text-[#ff4d00]" size={28} />
+              <h3 className="font-black uppercase text-xs sm:text-sm mb-1 text-black">Économisez 20% à 40%</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Sur le coût d'achat</p>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <Banknote className="mx-auto mb-3 text-[#ff4d00]" size={28} />
+              <h3 className="font-black uppercase text-xs sm:text-sm mb-1 text-black">Transaction sécurisée</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Garantie & Fiabilité</p>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <Clock className="mx-auto mb-3 text-[#ff4d00]" size={28} />
+              <h3 className="font-black uppercase text-xs sm:text-sm mb-1 text-black">Paiement échelonné</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Selon votre budget</p>
+            </div>
+            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <CheckCircle className="mx-auto mb-3 text-[#ff4d00]" size={28} />
+              <h3 className="font-black uppercase text-xs sm:text-sm mb-1 text-black">Checking Auto Offert</h3>
+              <p className="text-[10px] text-gray-500 font-bold uppercase tracking-widest">Inspection complète</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* 2. LES OFFRES (Remontées juste après l'image) */}
+      {/* 2. LES OFFRES */}
       {!searchResults && (
         <div className="bg-gray-50">
           <Offres onSelect={(offre) => setSelectedOffre(offre)} />
         </div>
       )}
 
-      {/* 3. LE FORMULAIRE DE RECHERCHE (Descendu) */}
+      {/* 3. LE FORMULAIRE DE RECHERCHE */}
       <div className="w-full bg-white py-16 px-4">
         <div className="max-w-[800px] mx-auto bg-white rounded-2xl shadow-2xl p-6 sm:p-8 border border-gray-100 relative -mt-10 md:-mt-24 z-20">
           
           <div className="flex flex-col items-center text-center mb-8">
-             <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Recherche <span className="text-[#ff4d00]">Spécifique</span></h2>
-             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trouvez le véhicule parfait selon vos critères</p>
+              <h2 className="text-2xl font-black italic uppercase tracking-tighter mb-2">Recherche <span className="text-[#ff4d00]">Spécifique</span></h2>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Trouvez le véhicule parfait selon vos critères</p>
           </div>
 
           <div className="flex flex-wrap gap-2 mb-8 bg-gray-100 p-2 rounded-2xl w-full sm:w-fit mx-auto sm:mx-0">

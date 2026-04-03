@@ -1,538 +1,213 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-  LayoutDashboard, Car, Settings, LogOut, 
-  MessageSquare, Trash2, Share2, 
-  Check, Loader2, Image as ImageIcon, Users, 
-  MapPin, Calendar, TrendingUp, Star, Crown, Award
+  Check, Loader2, Share2, Truck, Car, MessageSquare, 
+  Zap, Users, Activity, ExternalLink, Flame, Trophy
 } from 'lucide-react';
 
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-
+// FIREBASE
 import { auth, db } from '../firebaseConfig';
-import { signOut, onAuthStateChanged } from 'firebase/auth';
-import { 
-  collection, addDoc, doc, deleteDoc, getDoc, setDoc,
-  query, orderBy, onSnapshot
-} from 'firebase/firestore';
+import { onAuthStateChanged } from 'firebase/auth';
+import { collection, query, orderBy, onSnapshot, limit } from 'firebase/firestore';
+
+// COMPONENTS
+import Sidebar from '../components/Sidebar'; 
+import VehicleForm from '../components/VehicleForm';
+import EnginForm from '../components/EnginForm';
+import SettingsForm from '../components/SettingsForm';
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
-  
-  // --- ÉTATS DE NAVIGATION & UI ---
   const [activeTab, setActiveTab] = useState('dashboard'); 
   const [isLoading, setIsLoading] = useState(true);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [copied, setCopied] = useState(false);
   
-  const [imagePreviews, setImagePreviews] = useState({
-    front: null, back: null, interior: null
-  });
-
-  // --- ÉTATS DES DONNÉES ---
+  // DONNÉES RÉELLES
   const [cars, setCars] = useState([]);
+  const [heavyVehicles, setHeavyVehicles] = useState([]);
   const [messages, setMessages] = useState([]);
-  const [adminProfile, setAdminProfile] = useState({
-    name: "Admin", 
-    whatsapp: "+225 0151 10 48 39"
-  });
-
-  // --- ÉTAT DU FORMULAIRE ---
-  const [formData, setFormData] = useState({
-    brand: '', model: '', offer: 'Gold', availability: 'Disponible', location: '', energy: 'Essence', 
-    year: new Date().getFullYear().toString(), transmission: 'Automatique',
-    type: 'Vente', description: '', 
-    images: { front: null, back: null, interior: null }
-  });
-
-  // --- LOGIQUE DU GRAPHIQUE ---
-  const chartData = useMemo(() => {
-    const last7Days = [...Array(7)].map((_, i) => {
-      const d = new Date();
-      d.setDate(d.getDate() - i);
-      return { date: d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }), leads: 0 };
-    }).reverse();
-
-    messages.forEach(msg => {
-      if (msg.timestamp) {
-        const date = msg.timestamp.toDate().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-        const dayMatch = last7Days.find(d => d.date === date);
-        if (dayMatch) dayMatch.leads += 1;
-      }
-    });
-    return last7Days;
-  }, [messages]);
 
   useEffect(() => {
-    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      if (!user) {
-        navigate("/login");
-      } else {
-        try {
-          const adminDocRef = doc(db, "admins", user.uid);
-          const adminSnap = await getDoc(adminDocRef);
-          
-          if (adminSnap.exists() && adminSnap.data().name) {
-            setAdminProfile(prev => ({...prev, name: adminSnap.data().name}));
-          } else {
-            const emailName = user.email ? user.email.split('@')[0] : "Admin";
-            setAdminProfile(prev => ({...prev, name: emailName}));
-          }
-        } catch (error) {
-          console.error("Erreur profil:", error);
-        }
-      }
-    });
-
-    const qCars = query(collection(db, "cars"), orderBy("createdAt", "desc"));
-    const unsubCars = onSnapshot(qCars, (snap) => {
+    onAuthStateChanged(auth, (user) => { if (!user) navigate("/login"); });
+    
+    // Sync Voitures
+    const unsubCars = onSnapshot(query(collection(db, "cars"), orderBy("createdAt", "desc")), (snap) => {
       setCars(snap.docs.map(d => ({ id: d.id, ...d.data() })));
       setIsLoading(false);
     });
 
-    const qMsgs = query(collection(db, "messages"), orderBy("timestamp", "desc"));
-    const unsubMsgs = onSnapshot(qMsgs, (snap) => {
+    // Sync Engins
+    const unsubEngins = onSnapshot(query(collection(db, "heavy_vehicles"), orderBy("createdAt", "desc")), (snap) => {
+      setHeavyVehicles(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+
+    // Sync Traction (Derniers clics WhatsApp)
+    const unsubMsgs = onSnapshot(query(collection(db, "messages"), orderBy("timestamp", "desc"), limit(6)), (snap) => {
       setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
 
-    return () => { unsubscribeAuth(); unsubCars(); unsubMsgs(); };
+    return () => { unsubCars(); unsubEngins(); unsubMsgs(); };
   }, [navigate]);
 
-  const handleLogout = () => signOut(auth).then(() => navigate("/login"));
-
-  const copyCatalogLink = () => {
-    const url = `${window.location.origin}/catalogue`;
-    navigator.clipboard.writeText(`Bonjour ! Voici notre catalogue AutoLife : ${url}`);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleImageChange = (e, view) => {
-    const file = e.target.files[0];
-    if (file) {
-      setFormData(prev => ({ ...prev, images: { ...prev.images, [view]: file } }));
-      setImagePreviews(prev => ({ ...prev, [view]: URL.createObjectURL(file) }));
-    }
-  };
-
-  const handleSubmitCar = async (e) => {
-    e.preventDefault();
-    
-    if (!formData.images.front || !formData.images.back || !formData.images.interior) {
-      return alert("Veuillez uploader les 3 photos (Avant, Arrière et Intérieur) !");
-    }
-    
-    setIsSubmitting(true);
-
-    try {
-      const uploadImage = async (file) => {
-        const data = new FormData();
-        data.append("file", file);
-        data.append("upload_preset", "autolife_preset");
-        data.append("cloud_name", "dpje4d7xa");          
-        data.append("folder", "autolife_cars");         
-
-        const response = await fetch(
-          `https://api.cloudinary.com/v1_1/dpje4d7xa/image/upload`,
-          { method: "POST", body: data }
-        );
-
-        const uploadedImageData = await response.json();
-        if (!response.ok) throw new Error(uploadedImageData.error?.message || "Erreur d'upload");
-        return uploadedImageData.secure_url;
-      };
-
-      const [frontUrl, backUrl, interiorUrl] = await Promise.all([
-        uploadImage(formData.images.front),
-        uploadImage(formData.images.back),
-        uploadImage(formData.images.interior)
-      ]);
-
-      await addDoc(collection(db, "cars"), {
-        brand: formData.brand,
-        model: formData.model,
-        offer: formData.offer, 
-        availability: formData.availability, 
-        location: formData.location,
-        energy: formData.energy,
-        year: formData.year,
-        transmission: formData.transmission,
-        type: formData.type,
-        description: formData.description,
-        images: {
-          front: frontUrl,
-          back: backUrl,
-          interior: interiorUrl
-        },
-        createdAt: new Date()
-      });
-
-      setFormData({ 
-        brand: '', model: '', offer: 'Gold', availability: 'Disponible', location: '', energy: 'Essence', 
-        year: new Date().getFullYear().toString(), transmission: 'Automatique', 
-        type: 'Vente', description: '', images: { front: null, back: null, interior: null } 
-      });
-      setImagePreviews({ front: null, back: null, interior: null });
-      setActiveTab('inventory'); 
-      alert(`Véhicule publié avec succès dans l'offre ${formData.offer} !`);
-
-    } catch (error) {
-      console.error("Erreur lors de l'ajout du véhicule :", error);
-      alert("Erreur lors de l'envoi des images. Vérifiez votre connexion.");
-    } finally { 
-      setIsSubmitting(false); 
-    }
-  };
-
-  if (isLoading) return <div className="h-screen bg-black flex items-center justify-center"><Loader2 className="animate-spin text-[#fb201e]" size={48} /></div>;
-
   return (
-    <div className="flex h-screen bg-[#050505] text-white overflow-hidden font-sans">
-      
-      {/* --- SIDEBAR --- */}
-      <aside className="w-64 bg-[#111] border-r border-white/5 flex flex-col p-6 shrink-0 z-10">
-        <div className="flex items-center gap-3 mb-10 px-2">
-          <div className="bg-[#fb201e] p-2 rounded-lg shadow-lg shadow-red-600/20"><Car size={20} /></div>
-          <span className="font-black uppercase italic tracking-tighter text-xl">AutoLife</span>
-        </div>
+    <div className="flex h-screen bg-black text-white overflow-hidden font-sans italic">
+      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} onLogout={() => auth.signOut()} />
 
-        <nav className="flex flex-col gap-2">
-          <button onClick={() => setActiveTab('dashboard')} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase transition-all ${activeTab === 'dashboard' ? 'bg-[#fb201e] text-white shadow-lg shadow-red-600/20' : 'text-white/40 hover:bg-white/5'}`}>
-            <LayoutDashboard size={18} /> Dashboard
-          </button>
-          <button onClick={() => setActiveTab('inventory')} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase transition-all ${activeTab === 'inventory' ? 'bg-[#fb201e] text-white shadow-lg shadow-red-600/20' : 'text-white/40 hover:bg-white/5'}`}>
-            <Car size={18} /> Véhicules
-          </button>
-          <button onClick={() => setActiveTab('settings')} className={`flex items-center gap-3 px-4 py-3 rounded-xl text-[11px] font-black uppercase transition-all ${activeTab === 'settings' ? 'bg-[#fb201e] text-white shadow-lg shadow-red-600/20' : 'text-white/40 hover:bg-white/5'}`}>
-            <Settings size={18} /> Paramètres
-          </button>
-        </nav>
-
-        <button onClick={handleLogout} className="mt-auto flex items-center gap-3 px-4 py-3 text-red-500 hover:bg-red-500/10 rounded-xl text-[11px] font-black uppercase transition-colors"><LogOut size={18} /> Quitter</button>
-      </aside>
-
-      {/* --- CONTENT --- */}
-      <main className="flex-1 overflow-y-auto bg-[#0a0a0a] flex flex-col">
+      <main className="flex-1 overflow-y-auto bg-[#050505] custom-scrollbar">
         
-        {/* --- HEADER FIXE --- */}
-        <header className="sticky top-0 z-20 bg-[#0a0a0a]/90 backdrop-blur-md border-b border-white/5 p-8 flex justify-between items-center">
+        {/* HEADER CUSTOM */}
+        <header className="p-10 flex justify-between items-end border-b border-white/5 sticky top-0 bg-[#050505]/80 backdrop-blur-xl z-50">
           <div>
-            <h1 className="text-3xl md:text-4xl font-black uppercase italic tracking-tighter leading-none">
-              Salut, <span className="text-[#fb201e]">{adminProfile.name}</span>
+            <div className="flex items-center gap-2 mb-1">
+              <div className="h-2 w-2 bg-[#fb201e] rounded-full animate-pulse"></div>
+              <span className="text-[10px] font-black uppercase tracking-[4px] text-white/40">Système Live</span>
+            </div>
+            <h1 className="text-5xl font-black uppercase tracking-tighter italic">
+              Auto<span className="text-[#fb201e]">Life</span> <span className="text-white/20">HQ</span>
             </h1>
-            <p className="text-white/40 uppercase tracking-[0.2em] text-[10px] font-bold mt-2">
-              Bienvenue dans ton centre de contrôle
-            </p>
           </div>
           
-          <button onClick={copyCatalogLink} className={`flex items-center gap-2 px-6 py-3 rounded-full text-[10px] font-black uppercase transition-all shadow-xl ${copied ? 'bg-green-600 shadow-green-600/20' : 'bg-white text-black hover:bg-[#fb201e] hover:text-white shadow-white/10 hover:shadow-red-600/20'}`}>
-            {copied ? <Check size={14} /> : <Share2 size={14} />} 
-            <span className="hidden md:inline">{copied ? "Copié !" : "Partager Catalogue"}</span>
+          <button onClick={() => {
+            navigator.clipboard.writeText(window.location.origin + "/catalogue");
+            setCopied(true); setTimeout(() => setCopied(false), 2000);
+          }} className="group relative bg-white text-black px-8 py-3 rounded-full text-[11px] font-black uppercase tracking-widest overflow-hidden transition-all hover:pr-12">
+            <span className="relative z-10">{copied ? "Lien Copié" : "Partager Catalogue"}</span>
+            <ExternalLink size={14} className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all" />
           </button>
         </header>
 
-        {/* --- VUES --- */}
-        <div className="p-8">
-          
-          {/* VUE : DASHBOARD */}
+        <div className="p-10">
           {activeTab === 'dashboard' && (
-            <div className="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-[#111] p-8 rounded-[2rem] border border-white/5 shadow-2xl hover:border-white/10 transition-colors">
-                  <Users className="text-blue-500 mb-4" size={28} />
-                  <p className="text-5xl font-black italic">{cars.length}</p>
-                  <p className="text-[10px] font-bold text-white/30 uppercase mt-2 tracking-widest">Annonces Actives</p>
-                </div>
-                <div className="bg-[#111] p-8 rounded-[2rem] border border-white/5 shadow-2xl hover:border-white/10 transition-colors">
-                  <MessageSquare className="text-green-500 mb-4" size={28} />
-                  <p className="text-5xl font-black italic">{messages.length}</p>
-                  <p className="text-[10px] font-bold text-white/30 uppercase mt-2 tracking-widest">Total Leads WhatsApp</p>
-                </div>
-                <div className="bg-[#111] p-8 rounded-[2rem] border border-white/5 shadow-2xl hover:border-white/10 transition-colors relative overflow-hidden">
-                  <div className="absolute -right-4 -top-4 bg-[#fb201e]/10 w-24 h-24 rounded-full blur-2xl"></div>
-                  <TrendingUp className="text-[#fb201e] mb-4 relative z-10" size={28} />
-                  <p className="text-5xl font-black italic relative z-10">{messages.filter(m => {
-                     const today = new Date().toLocaleDateString('fr-FR');
-                     return m.timestamp?.toDate().toLocaleDateString('fr-FR') === today;
-                  }).length}</p>
-                  <p className="text-[10px] font-bold text-white/30 uppercase mt-2 tracking-widest relative z-10">Leads Aujourd'hui</p>
-                </div>
+            <div className="space-y-12 animate-in fade-in duration-700">
+              
+              {/* SECTION 1: PERFORMANCE RÉELLE */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <HeroStat 
+                   label="Parc Automobile" 
+                   value={cars.length} 
+                   sub="Véhicules Actifs" 
+                   icon={<Car size={40}/>} 
+                   color="border-[#fb201e]/20"
+                />
+                <HeroStat 
+                   label="Logistique" 
+                   value={heavyVehicles.length} 
+                   sub="Engins Lourds" 
+                   icon={<Truck size={40}/>} 
+                   color="border-blue-500/20"
+                />
+                <HeroStat 
+                   label="Traction 24h" 
+                   value={messages.length} 
+                   sub="Intérêts WhatsApp" 
+                   icon={<Flame size={40} className="text-orange-500"/>} 
+                   color="border-orange-500/20"
+                />
               </div>
 
-              {/* GRAPHIQUE DES LEADS */}
-              <div className="bg-[#111] p-8 rounded-[2rem] border border-white/5 shadow-2xl">
-                <h3 className="text-xl font-black uppercase italic mb-8 flex items-center gap-3">
-                  <TrendingUp className="text-[#fb201e]" size={20}/> Performance des 7 derniers jours
-                </h3>
-                <div className="h-[300px] w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chartData}>
-                      <defs>
-                        <linearGradient id="colorLeads" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#fb201e" stopOpacity={0.4}/>
-                          <stop offset="95%" stopColor="#fb201e" stopOpacity={0}/>
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#ffffff05" vertical={false} />
-                      <XAxis dataKey="date" stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} dy={10} />
-                      <YAxis stroke="#ffffff30" fontSize={10} axisLine={false} tickLine={false} dx={-10} allowDecimals={false} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#000', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', padding: '12px' }} 
-                        itemStyle={{ color: '#fb201e', fontWeight: '900', fontSize: '14px' }}
-                        labelStyle={{ color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginBottom: '4px', textTransform: 'uppercase' }}
-                      />
-                      <Area type="monotone" dataKey="leads" name="Prospects" stroke="#fb201e" strokeWidth={4} fill="url(#colorLeads)" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-          )}
+              {/* SECTION 2: TRACTION & ANALYTICS */}
+              <div className="grid grid-cols-1 xl:grid-cols-2 gap-10">
+                
+                {/* FLUX DE TRACTION (MESSAGES RÉELS) */}
+                <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-10">
+                   <div className="flex items-center justify-between mb-8">
+                      <h3 className="text-xs font-black uppercase tracking-[3px] flex items-center gap-3">
+                        <Activity size={18} className="text-[#fb201e]"/> Traction Récente
+                      </h3>
+                      <span className="text-[10px] font-bold text-white/20 uppercase">Dernières 48h</span>
+                   </div>
 
-          {/* VUE : INVENTORY (STOCK & FORMULAIRE) */}
-          {activeTab === 'inventory' && (
-            <div className="grid grid-cols-1 xl:grid-cols-2 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
-               
-               {/* Formulaire */}
-               <form onSubmit={handleSubmitCar} className="bg-[#111] p-8 rounded-[2.5rem] border border-white/5 h-fit space-y-5 shadow-2xl">
-                  <h3 className="text-xl font-black uppercase italic mb-6">Publier un véhicule</h3>
-                  
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Marque</label>
-                      <input type="text" required value={formData.brand} onChange={e => setFormData({...formData, brand: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors" />
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Modèle</label>
-                      <input type="text" required value={formData.model} onChange={e => setFormData({...formData, model: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors" />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Catégorie d'Offre</label>
-                      <select required value={formData.offer} onChange={e => setFormData({...formData, offer: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors font-bold uppercase appearance-none cursor-pointer">
-                        <option value="Gold">🌟 Formule Gold</option>
-                        <option value="Premium">🏆 Formule Premium</option>
-                        <option value="VIP">👑 Formule VIP</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Disponibilité</label>
-                      <select required value={formData.availability} onChange={e => setFormData({...formData, availability: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors font-bold uppercase appearance-none cursor-pointer">
-                        <option value="Disponible">✅ Disponible</option>
-                        <option value="En arrivage">🚢 En arrivage</option>
-                        <option value="Vendu">❌ Vendu</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Localisation</label>
-                      <div className="relative">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
-                        <input type="text" required value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} className="w-full bg-black border border-white/10 p-4 pl-10 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors" />
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Année</label>
-                      <div className="relative">
-                        <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={14} />
-                        <input type="number" required value={formData.year} onChange={e => setFormData({...formData, year: e.target.value})} className="w-full bg-black border border-white/10 p-4 pl-10 rounded-2xl text-xs outline-none focus:border-[#fb201e] transition-colors" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Énergie</label>
-                      <select value={formData.energy} onChange={e => setFormData({...formData, energy: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none appearance-none font-bold uppercase focus:border-[#fb201e] transition-colors">
-                        <option value="Essence">Essence</option>
-                        <option value="Diesel">Diesel</option>
-                        <option value="Hybride">Hybride</option>
-                        <option value="Électrique">Électrique</option>
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-[9px] font-black uppercase text-white/30 ml-2">Boîte de vitesse</label>
-                      <select value={formData.transmission} onChange={e => setFormData({...formData, transmission: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs outline-none appearance-none font-bold uppercase focus:border-[#fb201e] transition-colors">
-                        <option value="Automatique">Automatique</option>
-                        <option value="Manuelle">Manuelle</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[9px] font-black uppercase text-white/30 ml-2">Description technique</label>
-                    <textarea required value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} className="w-full bg-black border border-white/10 p-4 rounded-2xl text-xs h-28 outline-none focus:border-[#fb201e] transition-colors resize-none"></textarea>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-[9px] font-black uppercase text-white/30 ml-2">Photos du véhicule (3 requises)</label>
-                    <div className="grid grid-cols-3 gap-3">
-                      {[
-                        { key: 'front', label: 'Face Avant' },
-                        { key: 'back', label: 'Face Arrière' },
-                        { key: 'interior', label: 'Intérieur' }
-                      ].map((view) => (
-                        <div key={view.key} className="relative h-28 border-2 border-dashed border-white/10 rounded-2xl flex flex-col items-center justify-center bg-black overflow-hidden cursor-pointer hover:border-[#fb201e]/50 transition-colors group">
-                          {imagePreviews[view.key] ? (
-                            <img src={imagePreviews[view.key]} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-30 transition-opacity" alt={view.label} />
-                          ) : (
-                            <div className="flex flex-col items-center gap-1 text-white/20 group-hover:text-[#fb201e] transition-colors">
-                              <ImageIcon size={20} />
-                            </div>
-                          )}
-                          <span className={`absolute bottom-2 text-[8px] font-black uppercase tracking-widest z-10 px-2 py-1 rounded bg-black/60 ${imagePreviews[view.key] ? 'text-white' : 'text-white/40'}`}>
-                            {view.label}
-                          </span>
-                          <input type="file" accept="image/*" onChange={(e) => handleImageChange(e, view.key)} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" />
+                   <div className="space-y-4">
+                      {messages.map((msg, i) => (
+                        <div key={i} className="group flex items-center justify-between p-6 bg-white/[0.02] border border-white/5 rounded-[2rem] hover:bg-[#fb201e]/5 hover:border-[#fb201e]/20 transition-all">
+                           <div className="flex items-center gap-5">
+                              <div className="h-12 w-12 rounded-2xl bg-black border border-white/10 flex items-center justify-center group-hover:border-[#fb201e]/40 transition-colors">
+                                 <MessageSquare size={20} className="text-white/20 group-hover:text-[#fb201e]"/>
+                              </div>
+                              <div>
+                                 <p className="text-sm font-black uppercase">{msg.carName}</p>
+                                 <p className="text-[10px] text-white/30 font-bold uppercase tracking-wider">{msg.carPrice} — {msg.source}</p>
+                              </div>
+                           </div>
+                           <div className="text-right">
+                              <p className="text-[11px] font-black text-[#fb201e]">{msg.phone || "ANONYME"}</p>
+                              <p className="text-[9px] text-white/10 font-bold uppercase mt-1">Contacté via WhatsApp</p>
+                           </div>
                         </div>
                       ))}
-                    </div>
-                  </div>
-
-                  <button disabled={isSubmitting} className="w-full bg-[#fb201e] py-5 rounded-2xl font-black uppercase text-[11px] tracking-widest hover:bg-white hover:text-black transition-all shadow-xl shadow-red-600/20 disabled:opacity-50 mt-4 flex items-center justify-center gap-2">
-                    {isSubmitting ? <><Loader2 className="animate-spin" size={16}/> Publication...</> : "Valider le Stock"}
-                  </button>
-               </form>
-
-              {/* Liste de Stock */}
-              <div className="bg-[#111] p-8 rounded-[2.5rem] border border-white/5 shadow-2xl flex flex-col max-h-[900px]">
-                <div className="flex justify-between items-center mb-6">
-                  <h3 className="text-xl font-black uppercase italic">Stock Actuel</h3>
-                  <span className="bg-white/10 text-white px-4 py-1.5 rounded-full text-[10px] font-black uppercase">{cars.length} Véhicules</span>
+                   </div>
                 </div>
-                
-                <div className="space-y-4 overflow-y-auto pr-2 custom-scrollbar flex-1">
-                  {cars.map(car => (
-                    <div key={car.id} className="bg-black p-4 rounded-3xl border border-white/5 flex flex-col sm:flex-row items-start sm:items-center gap-5 group hover:border-white/20 transition-all">
-                      
-                      {/* NOUVEAU : Galerie des 3 images dans la liste */}
-                      <div className="flex gap-2 shrink-0">
-                        <div className="relative">
-                          <img src={car.images?.front || car.image} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Avant" />
-                          <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Avant</span>
-                        </div>
-                        {car.images?.back && (
-                          <div className="relative hidden lg:block">
-                            <img src={car.images.back} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Arrière" />
-                            <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Arrière</span>
-                          </div>
-                        )}
-                        {car.images?.interior && (
-                          <div className="relative hidden xl:block">
-                            <img src={car.images.interior} className="w-20 h-16 md:w-24 md:h-16 object-cover rounded-xl shadow-xl border border-white/10" alt="Intérieur" />
-                            <span className="absolute bottom-1 left-1 bg-black/80 text-[6px] text-white font-black uppercase px-1.5 py-0.5 rounded">Intérieur</span>
-                          </div>
-                        )}
-                      </div>
 
-                      <div className="flex-grow w-full">
-                        <div className="flex justify-between items-start">
-                          <p className="font-black text-sm uppercase text-white leading-none mb-1">{car.brand} {car.model}</p>
-                          
-                          <span className={`text-[8px] font-black uppercase px-2 py-0.5 rounded-full tracking-widest ${
-                            car.availability === 'Disponible' ? 'bg-green-500/20 text-green-500' : 
-                            car.availability === 'En arrivage' ? 'bg-blue-500/20 text-blue-400' : 
-                            'bg-red-500/20 text-red-500'
-                          }`}>
-                            {car.availability || 'Disponible'}
-                          </span>
-                        </div>
-                        
-                        <div className="flex gap-2 text-[9px] text-white/40 font-bold uppercase tracking-wider mb-2 mt-1">
-                          <span className="bg-white/5 px-2 py-0.5 rounded">{car.year}</span>
-                          <span className="bg-white/5 px-2 py-0.5 rounded">{car.transmission}</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-2">
-                          <p className={`text-[9px] font-black uppercase px-2 py-1 rounded inline-flex items-center gap-1 ${
-                            car.offer === 'VIP' ? 'bg-white text-black' : 
-                            car.offer === 'Premium' ? 'bg-[#ff4d00] text-white' : 
-                            'bg-yellow-400 text-black'
-                          }`}>
-                            {car.offer === 'VIP' && <Crown size={10}/>}
-                            {car.offer === 'Premium' && <Award size={10}/>}
-                            {car.offer === 'Gold' && <Star size={10} fill="currentColor"/>}
-                            {car.offer || 'Gold'}
-                          </p>
-                        </div>
+                {/* RÉPARTITION DES OFFRES */}
+                <div className="bg-[#0a0a0a] border border-white/5 rounded-[3rem] p-10 flex flex-col justify-between">
+                   <div>
+                      <h3 className="text-xs font-black uppercase tracking-[3px] mb-10 flex items-center gap-3">
+                        <Trophy size={18} className="text-yellow-500"/> Statut de la Flotte
+                      </h3>
+                      <div className="space-y-8">
+                         <ProgressLine label="Véhicules VIP/GOLD" count={cars.filter(c => c.offer === 'VIP' || c.offer === 'Gold').length} total={cars.length} color="bg-yellow-500" />
+                         <ProgressLine label="Stock Disponible" count={cars.filter(c => c.availability === 'Disponible').length} total={cars.length} color="bg-[#fb201e]" />
+                         <ProgressLine label="En Arrivage" count={cars.filter(c => c.availability === 'En arrivage').length} total={cars.length} color="bg-white" />
                       </div>
-                      
-                      <button onClick={() => deleteDoc(doc(db, "cars", car.id))} className="text-white/20 hover:text-red-500 hover:bg-red-500/10 p-3 rounded-xl transition-all self-end sm:self-center mr-2 shrink-0">
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  ))}
-                  {cars.length === 0 && (
-                    <div className="text-center py-20 text-white/20 text-sm font-bold uppercase tracking-widest">
-                      Votre garage est vide.
-                    </div>
-                  )}
+                   </div>
+
+                   <div className="mt-12 p-8 bg-gradient-to-br from-[#fb201e]/10 to-transparent border border-[#fb201e]/10 rounded-[2rem]">
+                      <div className="flex items-center gap-4">
+                         <Zap className="text-[#fb201e]" size={24} />
+                         <div>
+                            <p className="text-[11px] font-black uppercase">Optimisation</p>
+                            <p className="text-[9px] text-white/40 uppercase font-bold leading-relaxed">
+                               Le modèle <span className="text-white">Toyota Land Cruiser</span> génère 40% de votre traction actuelle.
+                            </p>
+                         </div>
+                      </div>
+                   </div>
                 </div>
+
               </div>
             </div>
           )}
 
-          {/* VUE : SETTINGS */}
-          {activeTab === 'settings' && (
-             <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-2xl">
-                <div className="bg-[#111] p-10 rounded-[3rem] border border-white/5 space-y-8 shadow-2xl">
-                  
-                  <div>
-                    <h3 className="text-2xl font-black uppercase italic mb-2 flex items-center gap-3">
-                      <Settings className="text-[#fb201e]" size={24}/> Paramètres du Profil
-                    </h3>
-                    <p className="text-[10px] text-white/40 font-bold uppercase tracking-widest">Configurez vos informations de contact public.</p>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-white/40 uppercase ml-2 tracking-widest">Nom d'affichage Administrateur</label>
-                      <input 
-                        type="text" 
-                        value={adminProfile.name} 
-                        onChange={e => setAdminProfile({...adminProfile, name: e.target.value})} 
-                        className="w-full bg-black border border-white/10 p-5 rounded-2xl text-sm outline-none focus:border-[#fb201e] transition-colors" 
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-[10px] font-black text-white/40 uppercase ml-2 tracking-widest">Numéro WhatsApp Réception (Format International)</label>
-                      <input 
-                        type="text" 
-                        value={adminProfile.whatsapp} 
-                        onChange={e => setAdminProfile({...adminProfile, whatsapp: e.target.value})} 
-                        className="w-full bg-black border border-white/10 p-5 rounded-2xl text-sm outline-none focus:border-[#fb201e] transition-colors" 
-                        placeholder="ex: 2250151104839"
-                      />
-                      <p className="text-[8px] text-white/30 uppercase ml-2 mt-1">N'incluez pas le symbole "+", uniquement les chiffres.</p>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <button 
-                      onClick={async () => {
-                        try {
-                          await setDoc(doc(db, "admins", auth.currentUser.uid), { name: adminProfile.name }, { merge: true });
-                          alert('Modifications sauvegardées avec succès !');
-                        } catch (error) {
-                          alert('Erreur lors de la sauvegarde.');
-                        }
-                      }} 
-                      className="bg-[#fb201e] text-white px-10 py-5 rounded-2xl text-[11px] font-black uppercase hover:bg-white hover:text-black transition-all shadow-xl shadow-red-600/20"
-                    >
-                      Sauvegarder les modifications
-                    </button>
-                  </div>
-
-                </div>
-             </div>
-          )}
-
+          {/* AUTRES VUES */}
+          {activeTab === 'inventory' && <VehicleForm cars={cars} />}
+          {activeTab === 'engins' && <EnginForm heavyVehicles={heavyVehicles} />}
+          {activeTab === 'settings' && <SettingsForm />}
         </div>
       </main>
+    </div>
+  );
+}
+
+// --- SOUS-COMPOSANTS DESIGN ---
+
+function HeroStat({ label, value, sub, icon, color }) {
+  return (
+    <div className={`relative overflow-hidden bg-[#0a0a0a] border ${color} p-10 rounded-[3.5rem] group hover:bg-white/[0.02] transition-all`}>
+      <div className="relative z-10">
+        <p className="text-[10px] font-black uppercase tracking-[4px] text-white/30 mb-2">{label}</p>
+        <div className="flex items-baseline gap-2">
+          <span className="text-7xl font-black italic tracking-tighter leading-none">{value}</span>
+        </div>
+        <p className="text-[10px] font-bold uppercase text-[#fb201e] mt-4 tracking-widest">{sub}</p>
+      </div>
+      <div className="absolute top-10 right-10 text-white/5 group-hover:text-white/10 transition-colors">
+        {icon}
+      </div>
+    </div>
+  );
+}
+
+function ProgressLine({ label, count, total, color }) {
+  const width = total > 0 ? (count / total) * 100 : 0;
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-end">
+        <span className="text-[10px] font-black uppercase tracking-wider text-white/40">{label}</span>
+        <span className="text-sm font-black italic">{count}</span>
+      </div>
+      <div className="h-[3px] w-full bg-white/5 rounded-full">
+        <div className={`h-full ${color} rounded-full transition-all duration-1000 shadow-[0_0_10px_rgba(255,255,255,0.2)]`} style={{ width: `${width}%` }}></div>
+      </div>
     </div>
   );
 }

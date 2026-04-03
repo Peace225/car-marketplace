@@ -6,7 +6,7 @@ import { ArrowLeft, Share2, Check, MessageCircle, Loader2 } from 'lucide-react';
 import { db } from '../firebaseConfig';
 import { doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 
-// --- FONCTION D'OPTIMISATION CLOUDINARY (Version Haute Qualité) ---
+// --- FONCTION D'OPTIMISATION CLOUDINARY ---
 const getOptimizedHeroImage = (url) => {
   if (!url || !url.includes('cloudinary.com')) return url;
   const parts = url.split('upload/');
@@ -16,6 +16,16 @@ const getOptimizedHeroImage = (url) => {
   return url;
 };
 
+// --- FONCTION POUR OBTENIR LA TRANCHE DE PRIX (SANS PARENTHÈSES) ---
+const getOfferPriceRange = (offer) => {
+  if (!offer) return "";
+  const offerLower = offer.toLowerCase();
+  if (offerLower === "gold") return "5 - 6,5 Millions";
+  if (offerLower === "premium") return "7 - 10 Millions";
+  if (offerLower === "vip") return "11 Millions et +";
+  return "";
+};
+
 export default function CarDetails() {
   const { id } = useParams();
   const [car, setCar] = useState(null);
@@ -23,7 +33,6 @@ export default function CarDetails() {
   const [copied, setCopied] = useState(false);
   const [isSending, setIsSending] = useState(false);
   
-  // --- NOUVEAU : GESTION DE LA GALERIE ---
   const [activeImage, setActiveImage] = useState(null);
 
   useEffect(() => {
@@ -35,8 +44,6 @@ export default function CarDetails() {
         if (docSnap.exists()) {
           const data = { id: docSnap.id, ...docSnap.data() };
           setCar(data);
-          
-          // On définit la première image à afficher (nouvelle ou ancienne)
           setActiveImage(data.images?.front || data.image);
         }
       } catch (error) {
@@ -48,12 +55,10 @@ export default function CarDetails() {
     fetchCar();
   }, [id]);
 
-  // --- FONCTION DE CONTACT & ENREGISTREMENT LEAD ---
   const handleContactWhatsApp = async () => {
     if (!car) return;
 
     setIsSending(true);
-    // ⚠️ Remplace par ton vrai numéro ou récupère-le depuis les paramètres Firebase
     const phoneNumber = "2250151104839";
     const messageText = `Bonjour AutoLife ! 🚘\nJe suis intéressé par la ${car.brand} ${car.model} affichée à ${car.price}.\nPouvez-vous me donner plus d'infos ?`;
     const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(messageText)}`;
@@ -114,7 +119,6 @@ export default function CarDetails() {
           
           {/* --- COLONNE GAUCHE : GALERIE D'IMAGES --- */}
           <div className="flex flex-col gap-4">
-            {/* Image Principale */}
             <div className="relative group aspect-[4/5] md:aspect-square rounded-[3rem] overflow-hidden border border-white/5 bg-[#111] shadow-2xl">
               <img 
                 src={getOptimizedHeroImage(activeImage)} 
@@ -123,7 +127,6 @@ export default function CarDetails() {
                 className="w-full h-full object-cover transition-transform duration-1000"
               />
               
-              {/* Badges sur l'image */}
               <div className="absolute top-6 right-6 flex flex-col items-end gap-2">
                 {car.availability && (
                   <span className={`text-[10px] font-black uppercase tracking-widest px-4 py-2 rounded-full backdrop-blur-md border shadow-lg ${
@@ -142,7 +145,6 @@ export default function CarDetails() {
               </div>
             </div>
 
-            {/* --- NOUVEAU : MINIATURES --- */}
             {car.images && (car.images.front || car.images.back || car.images.interior) && (
               <div className="flex gap-4 overflow-x-auto pb-2 custom-scrollbar">
                 {[
@@ -183,8 +185,10 @@ export default function CarDetails() {
           <div className="flex flex-col h-full justify-center animate-in fade-in slide-in-from-right-8 duration-700">
             <div className="mb-8">
               {car.offer && (
-                <span className="inline-block bg-white/5 border border-white/10 text-white/50 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest mb-4">
-                  Formule {car.offer}
+                <span className="inline-flex items-center gap-2 bg-white/5 border border-white/10 text-white/50 px-4 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest mb-4">
+                  Formule {car.offer} 
+                  <span className="text-white/20">•</span> 
+                  <span className="text-[#fb201e]">{getOfferPriceRange(car.offer)}</span>
                 </span>
               )}
               <h1 className="text-6xl md:text-8xl font-black italic uppercase tracking-tighter leading-none mb-4">
@@ -201,7 +205,6 @@ export default function CarDetails() {
               {car.description || "Véhicule premium inspecté et validé par l'équipe AutoLife."}
             </p>
 
-            {/* Grille des caractéristiques */}
             <div className="grid grid-cols-2 gap-4 mb-10">
               <div className="bg-[#111] border border-white/5 p-4 rounded-2xl flex flex-col">
                 <span className="text-white/30 text-[9px] font-black uppercase tracking-widest mb-1">Année</span>
@@ -228,7 +231,6 @@ export default function CarDetails() {
               </span>
             </div>
 
-            {/* Actions */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <button 
                 onClick={handleContactWhatsApp}

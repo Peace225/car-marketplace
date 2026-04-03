@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { Link, useSearchParams } from 'react-router-dom'; // AJOUT de useSearchParams
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { db } from '../firebaseConfig';
-import { collection, getDocs, addDoc, serverTimestamp } from 'firebase/firestore'; 
-import { LayoutGrid, Star, Crown, Diamond, Loader2, MessageCircle, Zap } from 'lucide-react';
+import { collection, getDocs, query, orderBy } from 'firebase/firestore'; 
+import { LayoutGrid, Star, Crown, Diamond, Loader2, MessageCircle, Zap, Truck, MapPin } from 'lucide-react';
 
 const getOptimizedImage = (url) => {
   if (!url || !url.includes('cloudinary.com')) return url;
@@ -13,94 +13,69 @@ const getOptimizedImage = (url) => {
   return url;
 };
 
-// --- SOUS-COMPOSANT : Carte interactive avec galerie ---
-const CarCard = ({ car, handleContactAdmin }) => {
-  const defaultImage = car.images?.front || car.image;
-  const [activeImage, setActiveImage] = useState(defaultImage);
-
-  useEffect(() => {
-    setActiveImage(car.images?.front || car.image);
-  }, [car]);
-
+// --- SOUS-COMPOSANT : Carte interactive (Gère Voitures et Engins) ---
+const CarCard = ({ item, handleContactAdmin, isEngin = false }) => {
+  // Pour les voitures on prend images.front, pour les engins on prend imageUrl
+  const displayImage = isEngin ? item.imageUrl : (item.images?.front || item.image);
+  
   return (
-    <div className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group relative">
+    <div className="bg-[#0f0f0f] border border-white/5 rounded-[2.5rem] overflow-hidden hover:border-[#fb201e]/40 transition-all group relative h-full flex flex-col">
       
-      {car.availability && (
+      {/* Badge Disponibilité (Uniquement pour voitures) */}
+      {!isEngin && item.availability && (
         <div className={`absolute top-4 right-4 z-10 text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border ${
-          car.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400 animate-pulse' : 
-          car.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
+          item.availability === 'Disponible' ? 'bg-[#22c55e]/90 text-white border-green-400 animate-pulse' : 
+          item.availability === 'En arrivage' ? 'bg-blue-500/80 text-white border-blue-400' : 
           'bg-red-500/80 text-white border-red-400'
         }`}>
-          {car.availability === 'Disponible' ? '✅ Dispo de suite' : car.availability}
+          {item.availability === 'Disponible' ? '✅ Dispo de suite' : item.availability}
         </div>
       )}
 
-      <div className="h-72 overflow-hidden relative">
+      {/* Badge Catégorie (Pour les Engins) */}
+      {isEngin && (
+        <div className="absolute top-4 right-4 z-10 text-[9px] font-black uppercase px-4 py-2 rounded-full shadow-2xl backdrop-blur-md border bg-[#fb201e] text-white border-red-400">
+          {item.category}
+        </div>
+      )}
+
+      <div className="h-72 overflow-hidden relative flex-shrink-0">
         <img 
-          src={getOptimizedImage(activeImage)} 
-          alt={car.model} 
-          loading="lazy"
-          className="w-full h-full object-cover transition-transform duration-700" 
+          src={getOptimizedImage(displayImage)} 
+          alt={item.model || item.name} 
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
         />
-        
         <div className="absolute bottom-4 left-4 flex gap-2">
           <span className="bg-black/80 backdrop-blur-md text-white text-[9px] font-black px-3 py-1 rounded-full uppercase border border-white/10">
-            {car.brand}
+            {isEngin ? item.tonnage : item.brand}
           </span>
         </div>
-
-        {car.images && (
-          <div className="absolute bottom-4 right-4 flex gap-2">
-            {['front', 'back', 'interior'].map((view) => (
-              car.images[view] && (
-                <button 
-                  key={view}
-                  onMouseEnter={() => setActiveImage(car.images[view])} 
-                  onClick={() => setActiveImage(car.images[view])}      
-                  className={`w-10 h-10 rounded-lg overflow-hidden border-2 transition-all ${
-                    activeImage === car.images[view] 
-                    ? 'border-[#fb201e] scale-110 shadow-lg shadow-red-500/50' 
-                    : 'border-white/20 opacity-60 hover:opacity-100 hover:scale-105'
-                  }`}
-                >
-                  <img src={getOptimizedImage(car.images[view])} className="w-full h-full object-cover" alt={view} />
-                </button>
-              )
-            ))}
-          </div>
-        )}
       </div>
 
-      <div className="p-8">
-        <div className="flex justify-between items-start mb-4">
-          <div>
-            <h3 className="text-2xl font-black italic uppercase leading-none">{car.model}</h3>
-            <p className="text-white/30 text-[10px] font-bold uppercase tracking-widest mt-2">Référence: {car.id.slice(0,6)}</p>
-          </div>
+      <div className="p-8 flex flex-col flex-grow">
+        <div className="mb-4">
+          <h3 className="text-2xl font-black italic uppercase">{isEngin ? item.name : item.model}</h3>
+          <p className="text-white/30 text-[10px] font-bold uppercase flex items-center gap-1">
+            {isEngin ? <><MapPin size={10}/> {item.location}</> : `Réf: ${item.id.slice(0,6)}`}
+          </p>
         </div>
         
-        <div className="flex items-center justify-between mt-8 pt-6 border-t border-white/5">
+        <div className="flex items-center justify-between mt-auto pt-6 border-t border-white/5">
           <div className="flex flex-col">
-            <span className="text-white/30 text-[8px] font-black uppercase tracking-[0.2em] mb-1">Prix TTC</span>
-            <span className="text-[#fb201e] text-xl font-black italic">{car.price}</span>
+            <span className="text-white/30 text-[8px] font-black uppercase">{isEngin ? "Localisation" : "Prix TTC"}</span>
+            <span className="text-[#fb201e] text-xl font-black italic">
+               {isEngin ? item.location : (item.price || "Sur Devis")}
+            </span>
           </div>
-          
           <div className="flex gap-2">
-            <button 
-              onClick={() => handleContactAdmin(car)}
-              title="Contacter sur WhatsApp"
-              className="bg-[#111] border border-white/5 text-green-500 h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#25D366] hover:text-white hover:border-[#25D366] shadow-lg transition-all duration-300"
-            >
+            <button onClick={() => handleContactAdmin(item, isEngin)} className="bg-[#111] border border-white/5 text-green-500 h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#25D366] hover:text-white transition-all">
               <MessageCircle size={20} />
             </button>
-
-            <Link 
-              to={`/voiture/${car.id}`} 
-              title="Voir les détails"
-              className="bg-white text-black h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#fb201e] hover:text-white transition-all duration-300 shadow-lg"
-            >
-              <LayoutGrid size={20} />
-            </Link>
+            {!isEngin && (
+              <Link to={`/voiture/${item.id}`} className="bg-white text-black h-12 w-12 rounded-full flex items-center justify-center hover:bg-[#fb201e] hover:text-white transition-all">
+                <LayoutGrid size={20} />
+              </Link>
+            )}
           </div>
         </div>
       </div>
@@ -110,179 +85,153 @@ const CarCard = ({ car, handleContactAdmin }) => {
 
 export default function Catalog() {
   const [cars, setCars] = useState([]);
+  const [heavyVehicles, setHeavyVehicles] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [onlyAvailable, setOnlyAvailable] = useState(false);
-  
-  // --- LECTURE DE L'URL POUR LE FILTRE ACTIF ---
+  const sliderRef = useRef(null);
   const [searchParams] = useSearchParams();
   const categoryFromUrl = searchParams.get('categorie');
   
-  // Définit le filtre initial basé sur l'URL (ex: "?categorie=gold" -> "Gold")
-  const initialFilter = categoryFromUrl 
-    ? categoryFromUrl.charAt(0).toUpperCase() + categoryFromUrl.slice(1).toLowerCase() 
-    : "Tous";
-
-  const [activeFilter, setActiveFilter] = useState(initialFilter);
-
-  // Met à jour le filtre si l'URL change pendant que l'utilisateur est déjà sur la page
-  useEffect(() => {
-    if (categoryFromUrl) {
-      setActiveFilter(categoryFromUrl.charAt(0).toUpperCase() + categoryFromUrl.slice(1).toLowerCase());
-    }
-  }, [categoryFromUrl]);
+  const [activeFilter, setActiveFilter] = useState(categoryFromUrl ? (categoryFromUrl.toUpperCase()) : "Tous");
 
   useEffect(() => {
-    const fetchCars = async () => {
+    const fetchData = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "cars"));
-        const carsData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data()
-        }));
-        setCars(carsData);
-      } catch (error) {
-        console.error("Erreur :", error);
-      } finally {
-        setLoading(false);
+        // Fetch Voitures
+        const carsSnap = await getDocs(collection(db, "cars"));
+        setCars(carsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+        
+        // Fetch Engins
+        const enginsSnap = await getDocs(query(collection(db, "heavy_vehicles"), orderBy("createdAt", "desc")));
+        setHeavyVehicles(enginsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+
+      } catch (error) { 
+        console.error("Erreur Fetch:", error); 
+      } finally { 
+        setLoading(false); 
       }
     };
-    fetchCars();
+    fetchData();
   }, []);
 
-  const getNumericPrice = (priceStr) => {
-    if (!priceStr) return 0;
-    return parseInt(priceStr.replace(/[^0-9]/g, ''), 10);
-  };
+  // --- LOGIQUE SLIDER : Uniquement Voitures Disponibles ---
+  const availableCars = useMemo(() => cars.filter(c => c.availability === 'Disponible').slice(0, 8), [cars]);
 
-  // Optimisation du filtre avec useMemo
-  const filteredCars = useMemo(() => {
+  useEffect(() => {
+    if (availableCars.length === 0) return;
+    const interval = setInterval(() => {
+      if (sliderRef.current) {
+        const { scrollLeft, scrollWidth, clientWidth } = sliderRef.current;
+        if (scrollLeft + clientWidth >= scrollWidth - 10) sliderRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+        else sliderRef.current.scrollBy({ left: 380, behavior: 'smooth' });
+      }
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [availableCars]);
+
+  const getNumericPrice = (p) => p ? parseInt(p.replace(/[^0-9]/g, ''), 10) : 0;
+
+  // --- LOGIQUE FILTRAGE DYNAMIQUE ---
+  const filteredItems = useMemo(() => {
+    if (activeFilter === "ENGIN") return heavyVehicles;
+    
+    if (activeFilter === "Tous") return cars;
+
     return cars.filter(car => {
-      if (onlyAvailable && car.availability !== 'Disponible') {
-        return false;
-      }
-
-      if (activeFilter !== "Tous") {
-        if (car.offer) {
-          // Compare en ignorant la casse par sécurité (ex: "VIP" vs "Vip")
-          return car.offer.toLowerCase() === activeFilter.toLowerCase();
-        } else {
-          const price = getNumericPrice(car.price);
-          if (activeFilter === "Gold") return price >= 5000000 && price <= 6500000;
-          if (activeFilter === "Premium") return price > 6500000 && price <= 10000000;
-          if (activeFilter === "Vip" || activeFilter === "VIP") return price > 10000000;
-        }
-      }
-      return true;
+      const price = getNumericPrice(car.price);
+      if (activeFilter === "GOLD") return price >= 5000000 && price <= 6500000 || car.offer === "Gold";
+      if (activeFilter === "PREMIUM") return price > 6500000 && price <= 10000000 || car.offer === "Premium";
+      if (activeFilter === "VIP") return price > 10000000 || car.offer === "VIP";
+      return false;
     });
-  }, [cars, activeFilter, onlyAvailable]);
+  }, [cars, heavyVehicles, activeFilter]);
 
   const filters = [
     { name: "Tous", icon: <LayoutGrid size={16} />, desc: "Tout le stock" },
-    { name: "Gold", icon: <Star size={16} fill="currentColor" />, desc: "5 - 6.5M" },
-    { name: "Premium", icon: <Crown size={16} fill="currentColor" />, desc: "7 - 10M" },
-    { name: "VIP", icon: <Diamond size={16} fill="currentColor" />, desc: "11M et +" },
+    { name: "GOLD", icon: <Star size={16} fill="currentColor" />, desc: "Budget Moyen" },
+    { name: "PREMIUM", icon: <Crown size={16} fill="currentColor" />, desc: "Haut de gamme" },
+    { name: "VIP", icon: <Diamond size={16} fill="currentColor" />, desc: "Luxe & Prestige" },
+    { name: "ENGIN", icon: <Truck size={16} />, desc: "Poids Lourds" },
   ];
 
-  const handleContactAdmin = async (car) => {
-    try {
-      await addDoc(collection(db, "messages"), {
-        carId: car.id,
-        carName: `${car.brand} ${car.model}`,
-        carPrice: car.price,
-        status: "Nouveau",
-        timestamp: serverTimestamp() 
-      });
-
-      const adminWhatsApp = "2250151104839"; 
-      const message = `Bonjour AutoLife, je suis très intéressé par la ${car.brand} ${car.model} affichée à ${car.price}. Est-elle toujours disponible ?`;
-      
-      const whatsappUrl = `https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(message)}`;
-      window.open(whatsappUrl, '_blank');
-
-    } catch (error) {
-      console.error("Erreur de tracking du lead:", error);
-      const adminWhatsApp = "2250151104839"; 
-      window.open(`https://wa.me/${adminWhatsApp}`, '_blank');
-    }
+  const handleContactAdmin = (item, isEngin) => {
+    const adminWhatsApp = "2250151104839";
+    const name = isEngin ? item.name : `${item.brand} ${item.model}`;
+    const price = isEngin ? `(Tonnage: ${item.tonnage})` : `(${item.price})`;
+    const msg = `Bonjour AutoLife, je souhaiterais des informations sur cet engin/véhicule : ${name} ${price}.`;
+    window.open(`https://wa.me/${adminWhatsApp}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-black flex flex-col justify-center items-center">
-        <Loader2 className="animate-spin text-[#fb201e] mb-4" size={48} />
-        <p className="text-white/20 uppercase font-black text-xs tracking-widest">Chargement du parc...</p>
-      </div>
-    );
-  }
+  if (loading) return (
+    <div className="min-h-screen bg-black flex flex-col justify-center items-center">
+      <Loader2 className="animate-spin text-[#fb201e] mb-4" size={48} />
+      <p className="text-white/20 font-black text-xs uppercase tracking-widest">Initialisation du catalogue...</p>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-black text-white py-16 px-6">
+    <div className="min-h-screen bg-black text-white py-16 px-4 md:px-6 overflow-hidden">
       <div className="max-w-7xl mx-auto">
         
-        <div className="flex flex-col items-center text-center mb-12 animate-in fade-in slide-in-from-top-4 duration-1000">
-          <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter leading-none mb-4">
+        <div className="flex flex-col items-center text-center mb-16">
+          <h2 className="text-5xl md:text-7xl font-black italic uppercase tracking-tighter">
             Nos <span className="text-[#fb201e]">Catalogues</span>
           </h2>
-          <p className="text-white/40 uppercase tracking-[0.3em] text-[10px] md:text-[12px] font-black">
-            Sélectionnez votre niveau de privilège
-          </p>
-          <div className="w-16 h-1 bg-[#fb201e] mt-6 rounded-full shadow-[0_0_20px_rgba(251,32,30,0.6)]"></div>
+          <p className="text-white/30 text-[10px] font-bold uppercase tracking-[0.3em] mt-4">AutoLife Services • Côte d'Ivoire</p>
         </div>
 
-        <div className="flex justify-center mb-10">
-          <button 
-            onClick={() => setOnlyAvailable(!onlyAvailable)}
-            className={`relative flex items-center justify-center gap-3 px-10 py-5 rounded-full text-[11px] md:text-[13px] font-black uppercase tracking-widest transition-all duration-300 border-2 z-10 ${
-              onlyAvailable 
-              ? "bg-[#22c55e] text-black border-[#22c55e] shadow-[0_0_40px_rgba(34,197,94,0.8)] scale-105" 
-              : "bg-[#050505] text-[#22c55e] border-[#22c55e] animate-pulse hover:bg-[#22c55e]/10 shadow-[0_0_25px_rgba(34,197,94,0.5)] hover:scale-105"
-            }`}
-          >
-            <Zap size={24} className={onlyAvailable ? "" : "animate-bounce text-[#22c55e] drop-shadow-md"} />
-            {onlyAvailable ? "Affichage : Dispo sur parc ✅" : "🚗 Voir les dispos sur parc !"}
-          </button>
-        </div>
-
-        <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-16">
-          {filters.map((f) => {
-            // Logique pour gérer la casse (ex: "Vip" vs "VIP")
-            const isActive = activeFilter.toLowerCase() === f.name.toLowerCase();
-            return (
-              <button
-                key={f.name}
-                onClick={() => setActiveFilter(f.name)}
-                className={`flex flex-col items-center min-w-[100px] md:min-w-[140px] p-4 rounded-2xl border transition-all duration-300 ${
-                  isActive 
-                  ? "bg-[#fb201e] border-[#fb201e] shadow-[0_0_25px_rgba(251,32,30,0.3)] scale-105" 
-                  : "bg-[#111] border-white/5 hover:border-white/20"
-                }`}
-              >
-                <span className={`mb-2 ${isActive ? "text-white" : "text-[#fb201e]"}`}>
-                  {f.icon}
-                </span>
-                <span className="text-[12px] font-black uppercase tracking-widest leading-none">{f.name}</span>
-                <span className={`text-[8px] font-bold mt-1 uppercase ${isActive ? "text-white/70" : "text-white/30"}`}>
-                  {f.desc}
-                </span>
-              </button>
-            )
-          })}
-        </div>
-
-        {filteredCars.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-700">
-            {filteredCars.map((car) => (
-              <CarCard key={car.id} car={car} handleContactAdmin={handleContactAdmin} />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-32 bg-[#0a0a0a] rounded-[3rem] border border-white/5">
-            <p className="text-white/20 font-black italic uppercase tracking-tighter text-2xl">
-              Aucun véhicule <span className="text-[#fb201e]">{activeFilter}</span> {onlyAvailable ? 'disponible sur parc' : 'trouvé'}
-            </p>
+        {/* SECTION SLIDER : VEHICULES DISPONIBLES */}
+        {availableCars.length > 0 && (
+          <div className="mb-20 animate-in fade-in slide-in-from-bottom-6 duration-700">
+            <div className="flex items-center gap-3 mb-8">
+              <Zap className="text-[#22c55e]" size={28} />
+              <h3 className="text-2xl font-black italic uppercase">Véhicules <span className="text-[#22c55e]">Disponibles</span></h3>
+            </div>
+            <div ref={sliderRef} className="flex overflow-x-auto gap-6 pb-8 scroll-smooth no-scrollbar">
+              {availableCars.map((car) => (
+                <div key={`dispo-${car.id}`} className="min-w-[85vw] sm:min-w-[400px] lg:min-w-[380px] flex-shrink-0">
+                  <CarCard item={car} handleContactAdmin={handleContactAdmin} />
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
+        {/* BARRE DE FILTRES */}
+        <div className="flex flex-wrap justify-center gap-3 md:gap-6 mb-16">
+          {filters.map((f) => (
+            <button
+              key={f.name}
+              onClick={() => setActiveFilter(f.name)}
+              className={`flex flex-col items-center flex-1 min-w-[110px] max-w-[160px] p-5 rounded-3xl border transition-all duration-300 ${
+                activeFilter === f.name 
+                ? "bg-[#fb201e] border-[#fb201e] shadow-[0_10px_30px_rgba(251,32,30,0.3)] scale-105" 
+                : "bg-[#111] border-white/5 hover:border-white/20"
+              }`}
+            >
+              <span className={`mb-2 ${activeFilter === f.name ? "text-white" : "text-[#fb201e]"}`}>{f.icon}</span>
+              <span className="text-[11px] font-black uppercase tracking-widest">{f.name}</span>
+              <span className={`text-[8px] font-bold mt-1 uppercase ${activeFilter === f.name ? "text-white/70" : "text-white/30"}`}>{f.desc}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* GRILLE DE RESULTATS */}
+        {filteredItems.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
+            {filteredItems.map((item) => (
+              <CarCard 
+                key={item.id} 
+                item={item} 
+                handleContactAdmin={handleContactAdmin} 
+                isEngin={activeFilter === "ENGIN"} 
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-20 bg-[#0a0a0a] rounded-[3rem] border border-white/5">
+            <p className="text-white/20 font-black italic text-2xl uppercase">Rien en stock pour <span className="text-[#fb201e]">{activeFilter}</span></p>
+          </div>
+        )}
       </div>
     </div>
   );
